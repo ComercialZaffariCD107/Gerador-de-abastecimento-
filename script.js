@@ -4924,3 +4924,586 @@ window.PagedConfig = {
     janela.document.close();
 
 }
+
+// =====================================
+// ENDEREÇOS DISPONÍVEIS POR ALTURA
+// =====================================
+// Lista os endereços com STATUS_ENDERECO = "Disponivel" filtrando
+// pela altura do PRÓPRIO endereço. A altura do endereço vem SEMPRE
+// da coluna TIPEND_PULMAO — a TIPEND_PRODUTO é a altura do produto
+// que ocupa o endereço (não existe produto num endereço disponível,
+// então ela é ignorada de propósito aqui, mesmo que venha preenchida).
+
+let enderecosDisponiveis = [];
+
+async function gerarEnderecosDisponiveis(){
+
+    if(!dadosPosicoes.length){
+
+        alert(
+            "Processe os arquivos primeiro (carregue a Posição de Endereços)."
+        );
+
+        return;
+
+    }
+
+    mostrarLoading();
+
+    await new Promise(resolve=>setTimeout(resolve,50));
+
+    try{
+
+        enderecosDisponiveis =
+        dadosPosicoes
+        .filter(p=>{
+
+            const status =
+            String(p.STATUS_ENDERECO || "")
+            .toUpperCase()
+            .trim();
+
+            return status === "DISPONIVEL";
+
+        })
+        .map(p=>{
+
+            const especie =
+            String(p.ESPECIE_END || "").toUpperCase();
+
+            return {
+
+                endereco:
+                `${p.CODRUA}.${p.NROPREDIO}.${p.NROAPARTAMENTO}.${p.NROSALA}`,
+
+                deposito: p.DEPOSITO || "",
+
+                pavilhao: p.PAVILHAO || "",
+
+                subdivisao: p.SUBDIVISAO || "",
+
+                rua: Number(p.CODRUA) || 0,
+
+                especie: p.ESPECIE_END || "",
+
+                especieNorm:
+                especie.includes("PULM") ? "PULMAO" : "APANHA",
+
+                // Altura do próprio endereço — SEMPRE TIPEND_PULMAO,
+                // nunca TIPEND_PRODUTO (por instrução explícita).
+                altura:
+                String(p.TIPEND_PULMAO || "").trim()
+
+            };
+
+        });
+
+        enderecosDisponiveis.sort((a,b)=>
+
+            a.rua - b.rua ||
+            a.endereco.localeCompare(b.endereco)
+
+        );
+
+        preencherFiltroAlturaDisponiveis();
+
+        abrirModalEnderecosDisponiveis();
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert("Erro ao gerar lista de endereços disponíveis.");
+
+    }
+
+    finally{
+
+        ocultarLoading();
+
+    }
+
+}
+
+function preencherFiltroAlturaDisponiveis(){
+
+    const select =
+    document.getElementById("filtroDispAltura");
+
+    if(!select) return;
+
+    const valorAtual = select.value;
+
+    const alturas =
+    [...new Set(
+        enderecosDisponiveis
+        .map(x=>x.altura)
+        .filter(v=>v !== "")
+    )]
+    .sort();
+
+    select.innerHTML =
+    `<option value="">Todas as alturas</option>` +
+    alturas
+    .map(a=>`<option value="${a}">${a}</option>`)
+    .join("");
+
+    if(alturas.includes(valorAtual)){
+        select.value = valorAtual;
+    }
+
+}
+
+function abrirModalEnderecosDisponiveis(){
+
+    const modal =
+    document.getElementById("modalEnderecosDisponiveis");
+
+    if(!modal){
+
+        alert(
+            "Modal de endereços disponíveis não encontrado no HTML."
+        );
+
+        return;
+
+    }
+
+    document.getElementById("filtroDispRua").value = "";
+
+    document.getElementById("filtroDispEndereco").value = "";
+
+    document.getElementById("filtroDispEspecie").value = "";
+
+    atualizarKPIsEnderecosDisponiveis(
+        enderecosDisponiveis
+    );
+
+    renderizarTabelaEnderecosDisponiveis(
+        enderecosDisponiveis
+    );
+
+    modal.classList.add("ativo");
+
+}
+
+function fecharModalEnderecosDisponiveis(){
+
+    document
+    .getElementById("modalEnderecosDisponiveis")
+    .classList.remove("ativo");
+
+}
+
+function atualizarKPIsEnderecosDisponiveis(dados){
+
+    document.getElementById("dispTotal").innerText =
+    dados.length;
+
+    document.getElementById("dispApanha").innerText =
+    dados.filter(x=>x.especieNorm === "APANHA").length;
+
+    document.getElementById("dispPulmao").innerText =
+    dados.filter(x=>x.especieNorm === "PULMAO").length;
+
+    document.getElementById("dispRuas").innerText =
+    new Set(
+        dados.map(x=>x.rua)
+    ).size;
+
+}
+
+function renderizarTabelaEnderecosDisponiveis(dados){
+
+    const tbody =
+    document.getElementById("tbodyDisp");
+
+    if(!dados.length){
+
+        tbody.innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:30px;color:#6b7280;">
+        Nenhum endereço disponível encontrado com os critérios atuais.
+        </td></tr>`;
+
+        return;
+
+    }
+
+    let html = "";
+
+    dados.forEach(item=>{
+
+        html += `
+        <tr>
+            <td>${item.endereco}</td>
+            <td>${item.deposito || "—"}</td>
+            <td>${item.pavilhao || "—"}</td>
+            <td>${item.subdivisao || "—"}</td>
+            <td>${String(item.rua).padStart(3,"0")}</td>
+            <td>${item.especie || "—"}</td>
+            <td style="font-size:.75rem;color:var(--text-muted);">${item.altura || "—"}</td>
+        </tr>
+        `;
+
+    });
+
+    tbody.innerHTML = html;
+
+}
+
+function obterEnderecosDisponiveisFiltrados(){
+
+    const alturaFiltro =
+    document.getElementById("filtroDispAltura")?.value || "";
+
+    const especieFiltro =
+    document.getElementById("filtroDispEspecie")?.value || "";
+
+    const ruaFiltro =
+    (document.getElementById("filtroDispRua")?.value || "")
+    .toLowerCase()
+    .trim();
+
+    const enderecoFiltro =
+    (document.getElementById("filtroDispEndereco")?.value || "")
+    .toLowerCase()
+    .trim();
+
+    return enderecosDisponiveis.filter(item=>{
+
+        const alturaOk =
+        !alturaFiltro || item.altura === alturaFiltro;
+
+        const especieOk =
+        !especieFiltro || item.especieNorm === especieFiltro;
+
+        const ruaOk =
+        !ruaFiltro ||
+        String(item.rua)
+        .toLowerCase()
+        .includes(ruaFiltro);
+
+        const enderecoOk =
+        !enderecoFiltro ||
+        item.endereco
+        .toLowerCase()
+        .includes(enderecoFiltro);
+
+        return alturaOk && especieOk && ruaOk && enderecoOk;
+
+    });
+
+}
+
+function aplicarFiltrosEnderecosDisponiveis(){
+
+    const filtrados =
+    obterEnderecosDisponiveisFiltrados();
+
+    atualizarKPIsEnderecosDisponiveis(
+        filtrados
+    );
+
+    renderizarTabelaEnderecosDisponiveis(
+        filtrados
+    );
+
+}
+
+function imprimirEnderecosDisponiveisModal(){
+
+    const dadosFiltrados =
+    obterEnderecosDisponiveisFiltrados();
+
+    if(!dadosFiltrados.length){
+
+        alert(
+            "Nenhum item para imprimir com os filtros atuais."
+        );
+
+        return;
+
+    }
+
+    const janela = window.open("", "_blank");
+
+    if(!janela){
+
+        alert("Permita pop-ups para este site.");
+
+        return;
+
+    }
+
+    imprimirEnderecosDisponiveis(
+        janela,
+        dadosFiltrados
+    );
+
+}
+
+// =====================================
+// IMPRIMIR ENDEREÇOS DISPONÍVEIS
+// =====================================
+
+function imprimirEnderecosDisponiveis(janela, dadosBase){
+
+    const dados =
+    dadosBase || enderecosDisponiveis;
+
+    if(!dados.length){
+
+        alert("Nenhum item para imprimir.");
+
+        return;
+
+    }
+
+    let html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Endereços Disponíveis</title>
+
+<style>
+
+@page{
+
+    size:A4 portrait;
+
+    margin:8mm 8mm 14mm 8mm;
+
+}
+
+*{
+
+    box-sizing:border-box;
+
+}
+
+body{
+
+    font-family:Arial,Helvetica,sans-serif;
+
+    margin:0;
+
+    color:#222;
+
+}
+
+h1{
+
+    margin:0;
+
+    text-align:center;
+
+    color:#0F4C81;
+
+    font-size:22px;
+
+}
+
+.info{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin:15px 0;
+
+    font-size:13px;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+th{
+
+    background:#0F4C81;
+
+    color:#fff;
+
+    padding:10px;
+
+    border:1px solid #DDD;
+
+    font-size:12px;
+
+}
+
+td{
+
+    border:1px solid #DDD;
+
+    padding:8px;
+
+    font-size:11px;
+
+}
+
+@media print{
+
+    th{
+
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+
+🟩 ENDEREÇOS DISPONÍVEIS POR ALTURA
+
+</h1>
+
+<div class="info">
+
+<div>
+
+<b>Data:</b>
+
+${new Date().toLocaleString("pt-BR")}
+
+</div>
+
+<div>
+
+<b>Total:</b>
+
+${dados.length}
+
+</div>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Endereço</th>
+
+<th>Depósito</th>
+
+<th>Pavilhão</th>
+
+<th>Subdivisão</th>
+
+<th>Rua</th>
+
+<th>Espécie</th>
+
+<th>Altura (TIPEND Pulmão)</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+    dados.forEach(item=>{
+
+        html += `
+
+<tr>
+
+<td>
+
+<b>${item.endereco}</b>
+
+</td>
+
+<td>
+
+${item.deposito || "—"}
+
+</td>
+
+<td>
+
+${item.pavilhao || "—"}
+
+</td>
+
+<td>
+
+${item.subdivisao || "—"}
+
+</td>
+
+<td style="text-align:center;">
+
+${String(item.rua).padStart(3,"0")}
+
+</td>
+
+<td>
+
+${item.especie || "—"}
+
+</td>
+
+<td style="text-align:center;font-size:9px;color:#666;">
+
+${item.altura || "—"}
+
+</td>
+
+</tr>
+
+`;
+
+    });
+
+    html += `
+
+</tbody>
+
+</table>
+
+<script>
+window.PagedConfig = {
+    after: () => {
+        window.focus();
+        window.print();
+    }
+};
+</script>
+<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+
+</body>
+
+</html>
+
+`;
+
+    janela.document.open();
+
+    janela.document.write(html);
+
+    janela.document.close();
+
+}

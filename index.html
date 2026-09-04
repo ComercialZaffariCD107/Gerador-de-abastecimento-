@@ -150,6 +150,14 @@
 
     </button>
 
+    <button
+        class="btn-exportar"
+        onclick="gerarEnderecosDisponiveis()">
+
+        🟩 Endereços Disponíveis
+
+    </button>
+
 </div>
 
         </div>
@@ -714,6 +722,154 @@
                     </thead>
 
                     <tbody id="tbodyLiber210">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===================================== -->
+<!-- MODAL ENDEREÇOS DISPONÍVEIS -->
+<!-- ===================================== -->
+
+<div
+    class="modal-sugestao"
+    id="modalEnderecosDisponiveis">
+
+    <div class="modal-conteudo">
+
+        <div class="modal-topo">
+
+            <h2>
+                🟩 Endereços Disponíveis por Altura
+            </h2>
+
+            <button
+                class="btn-fechar"
+                onclick="fecharModalEnderecosDisponiveis()">
+
+                Fechar ✕
+
+            </button>
+
+        </div>
+
+        <div class="modal-corpo">
+
+            <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 18px;max-width:900px;">
+                Lista todos os endereços com status "Disponível" na Posição de Endereços,
+                filtrando pela altura do próprio endereço — coluna <b>TIPEND_PULMAO</b>.
+                A coluna TIPEND_PRODUTO (altura do produto) não é considerada nesta busca.
+                Usa os mesmos dados de Posição de Endereços já carregados no upload do topo —
+                não precisa subir arquivo de novo.
+            </p>
+
+            <div class="cards-mov">
+
+                <div class="card-mov">
+                    <h3>Total Disponíveis</h3>
+                    <span id="dispTotal">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Apanha</h3>
+                    <span id="dispApanha">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Pulmão</h3>
+                    <span id="dispPulmao">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Ruas Distintas</h3>
+                    <span id="dispRuas">0</span>
+                </div>
+
+            </div>
+
+            <div class="filtros-mov">
+
+                <select
+                    id="filtroDispAltura"
+                    onchange="aplicarFiltrosEnderecosDisponiveis()">
+
+                    <option value="">Todas as alturas</option>
+
+                </select>
+
+                <select
+                    id="filtroDispEspecie"
+                    onchange="aplicarFiltrosEnderecosDisponiveis()">
+
+                    <option value="">Todas as espécies</option>
+                    <option value="APANHA">Apanha</option>
+                    <option value="PULMAO">Pulmão</option>
+
+                </select>
+
+                <input
+                    type="text"
+                    id="filtroDispRua"
+                    placeholder="Filtrar Rua"
+                    oninput="aplicarFiltrosEnderecosDisponiveis()">
+
+                <button
+                    class="btn-exportar"
+                    onclick="gerarEnderecosDisponiveis()">
+
+                    🔄 Atualizar
+
+                </button>
+
+            </div>
+
+            <div class="filtros-mov">
+
+                <input
+                    type="text"
+                    id="filtroDispEndereco"
+                    placeholder="Filtrar Endereço"
+                    oninput="aplicarFiltrosEnderecosDisponiveis()">
+
+                <button
+                    class="btn-exportar"
+                    onclick="imprimirEnderecosDisponiveisModal()">
+
+                    🖨️ Imprimir Filtrados
+
+                </button>
+
+            </div>
+
+            <div class="tabela-container">
+
+                <table class="tabela-mov">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Endereço</th>
+                            <th>Depósito</th>
+                            <th>Pavilhão</th>
+                            <th>Subdivisão</th>
+                            <th>Rua</th>
+                            <th>Espécie</th>
+                            <th>Altura (TIPEND Pulmão)</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tbodyDisp">
 
                     </tbody>
 
