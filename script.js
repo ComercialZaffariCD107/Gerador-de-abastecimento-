@@ -335,13 +335,15 @@ async function processar(){
         .getElementById("arquivoPosicoes")
         .files[0];
 
-        if(
-            !arquivoPedidos ||
-            !arquivoPosicoes
-        ){
+        // A Posição de Endereços é o único arquivo realmente
+        // obrigatório — é o que alimenta "Endereços Disponíveis",
+        // "Liberação de Endereços 2.10" e a base de posições usada
+        // em quase tudo. O Metabase Pedidos só é necessário para
+        // calcular o abastecimento (cruzamento com pedido/SKU).
+        if(!arquivoPosicoes){
 
             alert(
-                "Selecione os dois arquivos."
+                "Selecione ao menos o arquivo de Posição de Endereços."
             );
 
             ocultarLoading();
@@ -350,10 +352,20 @@ async function processar(){
 
         }
 
-        dadosPedidos =
-        await lerExcel(
-            arquivoPedidos
-        );
+        if(!arquivoPedidos){
+
+            dadosPedidos = [];
+
+        }
+
+        else{
+
+            dadosPedidos =
+            await lerExcel(
+                arquivoPedidos
+            );
+
+        }
 
         dadosPosicoes =
         await lerTXT(
@@ -403,6 +415,17 @@ console.log(
 console.log("Processamento finalizado");
 
 ocultarLoading();
+
+if(!dadosPedidos.length){
+
+    alert(
+        "Posição de Endereços carregada com sucesso.\n\n" +
+        "O Metabase Pedidos não foi selecionado, então o " +
+        "abastecimento por SKU ficará zerado — mas você já pode " +
+        "usar \"Endereços Disponíveis\" e \"Liberação de Endereços 2.10\" normalmente."
+    );
+
+}
 
     }
 
@@ -4941,18 +4964,22 @@ async function gerarEnderecosDisponiveis(){
     if(!dadosPosicoes.length){
 
         alert(
-            "Processe os arquivos primeiro (carregue a Posição de Endereços)."
+            "Processe os arquivos primeiro (carregue ao menos a Posição de Endereços e clique em Processar Dados)."
         );
 
         return;
 
     }
 
-    mostrarLoading();
-
-    await new Promise(resolve=>setTimeout(resolve,50));
-
     try{
+
+        mostrarLoading();
+
+        // Dá um respiro pro navegador desenhar o spinner antes do
+        // processamento pesado (evita a sensação de "travou").
+        await new Promise(resolve=>requestAnimationFrame(()=>
+            requestAnimationFrame(resolve)
+        ));
 
         enderecosDisponiveis =
         dadosPosicoes
@@ -5015,7 +5042,10 @@ async function gerarEnderecosDisponiveis(){
 
         console.error(erro);
 
-        alert("Erro ao gerar lista de endereços disponíveis.");
+        alert(
+            "Erro ao gerar lista de endereços disponíveis: " +
+            (erro?.message || erro)
+        );
 
     }
 
@@ -5071,11 +5101,13 @@ function abrirModalEnderecosDisponiveis(){
 
     }
 
-    document.getElementById("filtroDispRua").value = "";
+    const campoRua = document.getElementById("filtroDispRua");
+    const campoEndereco = document.getElementById("filtroDispEndereco");
+    const campoEspecie = document.getElementById("filtroDispEspecie");
 
-    document.getElementById("filtroDispEndereco").value = "";
-
-    document.getElementById("filtroDispEspecie").value = "";
+    if(campoRua) campoRua.value = "";
+    if(campoEndereco) campoEndereco.value = "";
+    if(campoEspecie) campoEspecie.value = "";
 
     atualizarKPIsEnderecosDisponiveis(
         enderecosDisponiveis
@@ -5115,10 +5147,19 @@ function atualizarKPIsEnderecosDisponiveis(dados){
 
 }
 
+// Limite de linhas desenhadas de uma vez na tabela. Bases de
+// posição costumam ter dezenas/centenas de milhares de linhas —
+// montar uma tabela HTML gigante de uma vez trava a aba por vários
+// segundos (parece "carregando infinitamente"). Acima do limite,
+// mostramos um aviso pedindo para refinar pelos filtros.
+const LIMITE_LINHAS_TABELA_DISP = 3000;
+
 function renderizarTabelaEnderecosDisponiveis(dados){
 
     const tbody =
     document.getElementById("tbodyDisp");
+
+    if(!tbody) return;
 
     if(!dados.length){
 
@@ -5131,12 +5172,18 @@ function renderizarTabelaEnderecosDisponiveis(dados){
 
     }
 
-    let html = "";
+    const excedeLimite =
+    dados.length > LIMITE_LINHAS_TABELA_DISP;
 
-    dados.forEach(item=>{
+    const dadosParaExibir =
+    excedeLimite
+    ? dados.slice(0, LIMITE_LINHAS_TABELA_DISP)
+    : dados;
 
-        html += `
-        <tr>
+    const linhas =
+    dadosParaExibir.map(item=>
+
+        `<tr>
             <td>${item.endereco}</td>
             <td>${item.deposito || "—"}</td>
             <td>${item.pavilhao || "—"}</td>
@@ -5144,12 +5191,23 @@ function renderizarTabelaEnderecosDisponiveis(dados){
             <td>${String(item.rua).padStart(3,"0")}</td>
             <td>${item.especie || "—"}</td>
             <td style="font-size:.75rem;color:var(--text-muted);">${item.altura || "—"}</td>
-        </tr>
-        `;
+        </tr>`
 
-    });
+    );
 
-    tbody.innerHTML = html;
+    if(excedeLimite){
+
+        linhas.push(
+            `<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--amber);">
+            Mostrando ${LIMITE_LINHAS_TABELA_DISP.toLocaleString("pt-BR")} de
+            ${dados.length.toLocaleString("pt-BR")} endereços. Use os filtros
+            (rua, espécie, altura ou endereço) para refinar a busca.
+            </td></tr>`
+        );
+
+    }
+
+    tbody.innerHTML = linhas.join("");
 
 }
 
