@@ -4998,6 +4998,8 @@ async function gerarEnderecosDisponiveis(){
             const especie =
             String(p.ESPECIE_END || "").toUpperCase();
 
+            const rua = Number(p.CODRUA) || 0;
+
             return {
 
                 endereco:
@@ -5005,11 +5007,14 @@ async function gerarEnderecosDisponiveis(){
 
                 deposito: p.DEPOSITO || "",
 
-                pavilhao: p.PAVILHAO || "",
+                // Pavilhão calculado pela RUA (mesma classificação
+                // oficial usada no resto do sistema) — a coluna
+                // PAVILHAO que vem da WMS não é confiável.
+                pavilhao: obterPavilhao(rua),
 
                 subdivisao: p.SUBDIVISAO || "",
 
-                rua: Number(p.CODRUA) || 0,
+                rua,
 
                 especie: p.ESPECIE_END || "",
 
@@ -5033,6 +5038,8 @@ async function gerarEnderecosDisponiveis(){
         );
 
         preencherFiltroAlturaDisponiveis();
+
+        preencherFiltroPavilhaoDisponiveis();
 
         abrirModalEnderecosDisponiveis();
 
@@ -5086,6 +5093,47 @@ function preencherFiltroAlturaDisponiveis(){
 
 }
 
+function preencherFiltroPavilhaoDisponiveis(){
+
+    const select =
+    document.getElementById("filtroDispPavilhao");
+
+    if(!select) return;
+
+    const valorAtual = select.value;
+
+    // Ordem fixa (mesma ordem da config PAVILHOES), com
+    // "Sem Pavilhão" só aparecendo se realmente houver endereços
+    // fora das faixas conhecidas.
+    const nomesConhecidos =
+    PAVILHOES.map(p=>p.nome);
+
+    const pavilhoesPresentes =
+    new Set(
+        enderecosDisponiveis.map(x=>x.pavilhao)
+    );
+
+    const pavilhoes =
+    nomesConhecidos
+    .filter(n=>pavilhoesPresentes.has(n))
+    .concat(
+        pavilhoesPresentes.has("Sem Pavilhão")
+        ? ["Sem Pavilhão"]
+        : []
+    );
+
+    select.innerHTML =
+    `<option value="">Todos os pavilhões</option>` +
+    pavilhoes
+    .map(p=>`<option value="${p}">${p}</option>`)
+    .join("");
+
+    if(pavilhoes.includes(valorAtual)){
+        select.value = valorAtual;
+    }
+
+}
+
 function abrirModalEnderecosDisponiveis(){
 
     const modal =
@@ -5104,10 +5152,12 @@ function abrirModalEnderecosDisponiveis(){
     const campoRua = document.getElementById("filtroDispRua");
     const campoEndereco = document.getElementById("filtroDispEndereco");
     const campoEspecie = document.getElementById("filtroDispEspecie");
+    const campoPavilhao = document.getElementById("filtroDispPavilhao");
 
     if(campoRua) campoRua.value = "";
     if(campoEndereco) campoEndereco.value = "";
     if(campoEspecie) campoEspecie.value = "";
+    if(campoPavilhao) campoPavilhao.value = "";
 
     atualizarKPIsEnderecosDisponiveis(
         enderecosDisponiveis
@@ -5219,6 +5269,9 @@ function obterEnderecosDisponiveisFiltrados(){
     const especieFiltro =
     document.getElementById("filtroDispEspecie")?.value || "";
 
+    const pavilhaoFiltro =
+    document.getElementById("filtroDispPavilhao")?.value || "";
+
     const ruaFiltro =
     (document.getElementById("filtroDispRua")?.value || "")
     .toLowerCase()
@@ -5237,6 +5290,9 @@ function obterEnderecosDisponiveisFiltrados(){
         const especieOk =
         !especieFiltro || item.especieNorm === especieFiltro;
 
+        const pavilhaoOk =
+        !pavilhaoFiltro || item.pavilhao === pavilhaoFiltro;
+
         const ruaOk =
         !ruaFiltro ||
         String(item.rua)
@@ -5249,7 +5305,7 @@ function obterEnderecosDisponiveisFiltrados(){
         .toLowerCase()
         .includes(enderecoFiltro);
 
-        return alturaOk && especieOk && ruaOk && enderecoOk;
+        return alturaOk && especieOk && pavilhaoOk && ruaOk && enderecoOk;
 
     });
 
