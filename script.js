@@ -80,12 +80,26 @@ function popularFiltroPavilhao(){
     .map(p => p.nome)
     .concat(["Sem Pavilhão"]);
 
+    // Preserva a seleção atual do usuário. Essa função é chamada
+    // de novo a cada reprocessamento (inclusive pela sincronização
+    // automática, a cada 5s) — sem isso, todo checkbox voltava a
+    // "marcado" e o filtro que o usuário tinha ajustado (ex.: um
+    // pavilhão desmarcado) era descartado silenciosamente,
+    // parecendo que o filtro "travava" ou "parava de funcionar".
+    const estadoAnterior = new Map(
+        Array.from(
+            document.querySelectorAll(".filtroPavilhaoItem")
+        )
+        .map(chk => [chk.value, chk.checked])
+    );
+
+    const primeiraVez = estadoAnterior.size === 0;
+
     let html = `
     <label class="filtro-pavilhao-item filtro-pavilhao-todos">
         <input
             type="checkbox"
             id="filtroPavilhaoTodos"
-            checked
             onchange="alternarTodosPavilhoes(this)">
         Todos Pavilhões
     </label>
@@ -94,13 +108,21 @@ function popularFiltroPavilhao(){
 
     nomes.forEach(nome=>{
 
+        // Mantém marcado/desmarcado como estava; só entra
+        // marcado por padrão na primeiríssima montagem (ou se
+        // for um pavilhão novo que não existia antes).
+        const marcado =
+        estadoAnterior.has(nome)
+        ? estadoAnterior.get(nome)
+        : true;
+
         html += `
         <label class="filtro-pavilhao-item">
             <input
                 type="checkbox"
                 class="filtroPavilhaoItem"
                 value="${nome}"
-                checked
+                ${marcado ? "checked" : ""}
                 onchange="atualizarSelecaoPavilhoes()">
             ${nome}
         </label>
@@ -109,6 +131,20 @@ function popularFiltroPavilhao(){
     });
 
     opcoes.innerHTML = html;
+
+    const chkTodos =
+    document.getElementById("filtroPavilhaoTodos");
+
+    if(chkTodos){
+
+        chkTodos.checked =
+        primeiraVez ||
+        Array.from(
+            document.querySelectorAll(".filtroPavilhaoItem")
+        )
+        .every(chk => chk.checked);
+
+    }
 
     atualizarLabelPavilhao();
 
