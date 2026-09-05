@@ -1309,6 +1309,196 @@ RESPONSIVO
 
 }
 
+.dropdown-check{
+
+    position:relative;
+
+    min-width:220px;
+
+}
+
+.dropdown-check-btn{
+
+    width:100%;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:10px 14px;
+
+    border-radius:var(--radius-sm);
+
+    border:1px solid var(--border-light);
+
+    background:var(--surface);
+
+    color:var(--text);
+
+    font-family:var(--font-body);
+
+    font-size:.9rem;
+
+    cursor:pointer;
+
+}
+
+.dropdown-check-btn:hover{
+
+    border-color:var(--amber);
+
+}
+
+.dropdown-check-btn .seta{
+
+    color:var(--text-muted);
+
+    font-size:.7rem;
+
+    transition:transform .15s ease;
+
+}
+
+.dropdown-check.aberto .dropdown-check-btn .seta{
+
+    transform:rotate(180deg);
+
+}
+
+.dropdown-check-painel{
+
+    display:none;
+
+    position:absolute;
+
+    top:calc(100% + 6px);
+
+    left:0;
+
+    min-width:100%;
+
+    max-height:280px;
+
+    overflow-y:auto;
+
+    background:var(--surface);
+
+    border:1px solid var(--border-light);
+
+    border-radius:var(--radius-sm);
+
+    box-shadow:0 12px 28px rgba(0,0,0,.5);
+
+    z-index:100;
+
+    padding:8px;
+
+}
+
+.dropdown-check.aberto .dropdown-check-painel{
+
+    display:block;
+
+}
+
+.dropdown-check-acoes{
+
+    display:flex;
+
+    gap:8px;
+
+    padding:4px 6px 8px;
+
+    border-bottom:1px solid var(--border);
+
+    margin-bottom:6px;
+
+}
+
+.dropdown-check-acoes button{
+
+    flex:1;
+
+    background:transparent;
+
+    border:1px solid var(--border-light);
+
+    color:var(--text-muted);
+
+    font-size:.68rem;
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+
+    font-weight:700;
+
+    padding:6px 4px;
+
+    border-radius:var(--radius-sm);
+
+    cursor:pointer;
+
+}
+
+.dropdown-check-acoes button:hover{
+
+    border-color:var(--amber);
+
+    color:var(--amber);
+
+}
+
+.dropdown-check-item{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:6px 6px;
+
+    border-radius:var(--radius-sm);
+
+    cursor:pointer;
+
+    font-size:.85rem;
+
+    color:var(--text);
+
+}
+
+.dropdown-check-item:hover{
+
+    background:var(--surface-alt);
+
+}
+
+.dropdown-check-item input{
+
+    accent-color:var(--amber);
+
+    cursor:pointer;
+
+}
+
+.dropdown-check-vazio{
+
+    padding:10px 6px;
+
+    color:var(--text-muted);
+
+    font-size:.8rem;
+
+    text-align:center;
+
+}
+
 .tabela-mov{
 
     width:100%;

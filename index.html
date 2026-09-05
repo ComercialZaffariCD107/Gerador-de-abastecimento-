@@ -823,6 +823,46 @@
 
                 </select>
 
+                <div
+                    class="dropdown-check"
+                    id="dropdownDispSubdivisao">
+
+                    <button
+                        type="button"
+                        class="dropdown-check-btn"
+                        onclick="alternarDropdownSubdivisaoDisponiveis(event)">
+
+                        <span id="dropdownDispSubdivisaoLabel">Todas as subdivisões</span>
+                        <span class="seta">▼</span>
+
+                    </button>
+
+                    <div
+                        class="dropdown-check-painel"
+                        id="dropdownDispSubdivisaoPainel">
+
+                        <div class="dropdown-check-acoes">
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesDisponiveis(true)">
+                                Marcar todas
+                            </button>
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesDisponiveis(false)">
+                                Desmarcar todas
+                            </button>
+
+                        </div>
+
+                        <div id="dropdownDispSubdivisaoLista"></div>
+
+                    </div>
+
+                </div>
+
                 <input
                     type="text"
                     id="filtroDispRua"
@@ -891,8 +931,8 @@
 
 </div>
 
-<script src="script.js?v=2"></script>
-<script src="sync.js?v=2"></script>
+<script src="script.js?v=3"></script>
+<script src="sync.js?v=3"></script>
 <script>
     (function iniciarAbertura(){
         const tela = document.getElementById('telaAbertura');

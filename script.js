@@ -5077,6 +5077,8 @@ async function gerarEnderecosDisponiveis(){
 
         preencherFiltroPavilhaoDisponiveis();
 
+        preencherFiltroSubdivisaoDisponiveis();
+
         abrirModalEnderecosDisponiveis();
 
     }
@@ -5170,6 +5172,182 @@ function preencherFiltroPavilhaoDisponiveis(){
 
 }
 
+// Subdivisões marcadas no dropdown de checkboxes. Guardamos por
+// nome (string) — quando null, ainda não foi inicializado e o
+// filtro trata como "todas selecionadas".
+let subdivisoesSelecionadasDisponiveis = null;
+
+function preencherFiltroSubdivisaoDisponiveis(){
+
+    const lista =
+    document.getElementById("dropdownDispSubdivisaoLista");
+
+    if(!lista) return;
+
+    const subdivisoes =
+    [...new Set(
+        enderecosDisponiveis
+        .map(x=>x.subdivisao)
+        .filter(v=>v !== "")
+    )]
+    .sort((a,b)=>a.localeCompare(b, "pt-BR"));
+
+    // Sempre que a lista é (re)gerada, começa com tudo marcado —
+    // simples e previsível para o usuário.
+    subdivisoesSelecionadasDisponiveis = new Set(subdivisoes);
+
+    if(!subdivisoes.length){
+
+        lista.innerHTML =
+        `<div class="dropdown-check-vazio">Nenhuma subdivisão encontrada</div>`;
+
+    } else {
+
+        lista.innerHTML =
+        subdivisoes.map(s=>{
+
+            const marcado =
+            subdivisoesSelecionadasDisponiveis.has(s);
+
+            const idSeguro =
+            "chkSubdiv_" + s.replace(/[^a-zA-Z0-9]/g,"_");
+
+            return `<label class="dropdown-check-item" for="${idSeguro}">
+                <input
+                    type="checkbox"
+                    id="${idSeguro}"
+                    value="${s}"
+                    ${marcado ? "checked" : ""}
+                    onchange="alternarSubdivisaoDisponiveis('${s.replace(/'/g,"\\'")}', this.checked)">
+                <span>${s}</span>
+            </label>`;
+
+        }).join("");
+
+    }
+
+    atualizarLabelDropdownSubdivisaoDisponiveis(subdivisoes.length);
+
+}
+
+function atualizarLabelDropdownSubdivisaoDisponiveis(totalSubdivisoes){
+
+    const label =
+    document.getElementById("dropdownDispSubdivisaoLabel");
+
+    if(!label) return;
+
+    const total =
+    totalSubdivisoes ??
+    new Set(enderecosDisponiveis.map(x=>x.subdivisao).filter(v=>v!=="")).size;
+
+    const selecionadas =
+    subdivisoesSelecionadasDisponiveis
+    ? subdivisoesSelecionadasDisponiveis.size
+    : total;
+
+    if(!total || selecionadas === total){
+        label.textContent = "Todas as subdivisões";
+    } else if(selecionadas === 0){
+        label.textContent = "Nenhuma subdivisão";
+    } else {
+        label.textContent = `${selecionadas} de ${total} subdivisões`;
+    }
+
+}
+
+function alternarSubdivisaoDisponiveis(nome, marcado){
+
+    if(!subdivisoesSelecionadasDisponiveis){
+        subdivisoesSelecionadasDisponiveis = new Set();
+    }
+
+    if(marcado){
+        subdivisoesSelecionadasDisponiveis.add(nome);
+    } else {
+        subdivisoesSelecionadasDisponiveis.delete(nome);
+    }
+
+    atualizarLabelDropdownSubdivisaoDisponiveis();
+
+    aplicarFiltrosEnderecosDisponiveis();
+
+}
+
+function marcarTodasSubdivisoesDisponiveis(marcarTudo){
+
+    const subdivisoes =
+    [...new Set(
+        enderecosDisponiveis
+        .map(x=>x.subdivisao)
+        .filter(v=>v !== "")
+    )];
+
+    subdivisoesSelecionadasDisponiveis =
+    marcarTudo
+    ? new Set(subdivisoes)
+    : new Set();
+
+    const lista =
+    document.getElementById("dropdownDispSubdivisaoLista");
+
+    if(lista){
+
+        lista
+        .querySelectorAll("input[type=checkbox]")
+        .forEach(chk=> chk.checked = marcarTudo);
+
+    }
+
+    atualizarLabelDropdownSubdivisaoDisponiveis();
+
+    aplicarFiltrosEnderecosDisponiveis();
+
+}
+
+function alternarDropdownSubdivisaoDisponiveis(evento){
+
+    evento.stopPropagation();
+
+    const dropdown =
+    document.getElementById("dropdownDispSubdivisao");
+
+    if(!dropdown) return;
+
+    const jaAberto =
+    dropdown.classList.contains("aberto");
+
+    dropdown.classList.toggle("aberto", !jaAberto);
+
+    if(!jaAberto){
+
+        // Fecha ao clicar fora — listener de uso único.
+        setTimeout(()=>{
+
+            document.addEventListener(
+                "click",
+                function fecharAoClicarFora(e){
+
+                    if(!dropdown.contains(e.target)){
+
+                        dropdown.classList.remove("aberto");
+
+                        document.removeEventListener(
+                            "click",
+                            fecharAoClicarFora
+                        );
+
+                    }
+
+                }
+            );
+
+        }, 0);
+
+    }
+
+}
+
 function abrirModalEnderecosDisponiveis(){
 
     const modal =
@@ -5194,6 +5372,10 @@ function abrirModalEnderecosDisponiveis(){
     if(campoEndereco) campoEndereco.value = "";
     if(campoEspecie) campoEspecie.value = "";
     if(campoPavilhao) campoPavilhao.value = "";
+
+    document
+    .getElementById("dropdownDispSubdivisao")
+    ?.classList.remove("aberto");
 
     atualizarKPIsEnderecosDisponiveis(
         enderecosDisponiveis
@@ -5329,6 +5511,13 @@ function obterEnderecosDisponiveisFiltrados(){
         const pavilhaoOk =
         !pavilhaoFiltro || item.pavilhao === pavilhaoFiltro;
 
+        // Sem subdivisão marcada no dado (string vazia) sempre
+        // passa — o filtro só restringe subdivisões conhecidas.
+        const subdivisaoOk =
+        !subdivisoesSelecionadasDisponiveis ||
+        item.subdivisao === "" ||
+        subdivisoesSelecionadasDisponiveis.has(item.subdivisao);
+
         const ruaOk =
         !ruaFiltro ||
         String(item.rua)
@@ -5341,7 +5530,7 @@ function obterEnderecosDisponiveisFiltrados(){
         .toLowerCase()
         .includes(enderecoFiltro);
 
-        return alturaOk && especieOk && pavilhaoOk && ruaOk && enderecoOk;
+        return alturaOk && especieOk && pavilhaoOk && subdivisaoOk && ruaOk && enderecoOk;
 
     });
 
