@@ -1,20 +1,25 @@
 /* =========================================================
-   GERADOR DE ABASTECIMENTO PCP — PAINEL COMERCIAL ZAFFARI
-   Tokens: branco/claro (base) + laranja Zaffari (ação) / verde (ok) /
-   vermelho Stok Center (crítico) / azul-navy (neutro)
+   GERADOR DE ABASTECIMENTO PCP — CONSOLE DE LOGÍSTICA
+   Comercial Zaffari / Stok Center
+   Conceito: barra de controle navy (console de operação) sobre
+   mesa de trabalho clara, com grid de piso de armazém ao fundo
+   e leitura de dados em monoespaçada (estilo manifesto/etiqueta).
    Tipografia: Oswald (display) + Inter (corpo) + JetBrains Mono (dados)
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root{
-    --bg:            #F3F5FB;
+    --navy-deep:     #0E1B3D;
+    --navy-mid:      #16265A;
+
+    --bg:            #EEF1F8;
     --surface:       #FFFFFF;
-    --surface-alt:   #F1F4FA;
+    --surface-alt:   #F2F4FA;
     --border:        #DEE3F0;
     --border-light:  #C7CFE6;
 
-    --text:          #182552;
+    --text:          #16203E;
     --text-muted:    #6B7593;
 
     --amber:         #E48B00;
@@ -45,10 +50,94 @@
 
 body{
     background:
-        radial-gradient(ellipse at top, #FFFFFF 0%, var(--bg) 60%);
-    background-attachment:fixed;
-    padding:25px;
+        radial-gradient(circle, rgba(14,27,61,.12) 1.5px, transparent 1.5px)
+        0 0 / 24px 24px,
+        var(--bg);
     color:var(--text);
+}
+
+/* =========================
+CONSOLE — BARRA SUPERIOR
+(assinatura visual: painel de despacho)
+========================= */
+
+.topbar{
+    position:sticky;
+    top:0;
+    z-index:500;
+    background:linear-gradient(180deg, var(--navy-mid) 0%, var(--navy-deep) 100%);
+    border-bottom:3px solid var(--amber);
+    box-shadow:0 8px 24px rgba(14,27,61,.25);
+}
+
+.topbar-inner{
+    max-width:1700px;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
+    padding:16px 25px;
+}
+
+.topbar-marca{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+}
+
+.topbar-marca .icone{
+    font-size:1.4rem;
+}
+
+.topbar-marca h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:1.3rem;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:#FFFFFF;
+}
+
+.topbar-marca span{
+    display:block;
+    margin-top:2px;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#A9B4D6;
+}
+
+.topbar-tag{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:#C7CFE6;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;
+    padding:6px 14px;
+}
+
+.topbar-tag .ponto{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--amber);
+    box-shadow:0 0 0 0 rgba(228,139,0,.6);
+    animation:pulsarPonto 2s infinite;
+}
+
+@keyframes pulsarPonto{
+    0%{ box-shadow:0 0 0 0 rgba(228,139,0,.55); }
+    70%{ box-shadow:0 0 0 7px rgba(228,139,0,0); }
+    100%{ box-shadow:0 0 0 0 rgba(228,139,0,0); }
 }
 
 /* =========================
@@ -219,40 +308,7 @@ ABERTURA — MARCAS (MOBILE)
 .container{
     max-width:1700px;
     margin:auto;
-}
-
-/* =========================
-TÍTULO + FAIXA DE SINALIZAÇÃO
-(assinatura visual: fita zebrada de doca)
-========================= */
-
-h1{
-    text-align:center;
-    margin-bottom:0;
-    color:var(--text);
-    font-family:var(--font-display);
-    font-weight:600;
-    font-size:2rem;
-    letter-spacing:.04em;
-    text-transform:uppercase;
-    padding-bottom:18px;
-}
-
-h1::after{
-    content:"";
-    display:block;
-    width:220px;
-    height:6px;
-    margin:16px auto 25px;
-    border-radius:2px;
-    background:repeating-linear-gradient(
-        135deg,
-        var(--amber) 0px,
-        var(--amber) 10px,
-        var(--bg) 10px,
-        var(--bg) 20px
-    );
-    opacity:.85;
+    padding:28px 25px 25px;
 }
 
 /* =========================
@@ -1032,6 +1088,21 @@ RESPONSIVO
     .filtros{
 
         flex-direction:column;
+    }
+
+    .topbar-inner{
+        justify-content:center;
+        text-align:center;
+    }
+
+    .topbar-marca{
+        flex-direction:column;
+        align-items:center;
+        gap:4px;
+    }
+
+    .container{
+        padding:22px 16px 20px;
     }
 
 }
