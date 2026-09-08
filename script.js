@@ -4,6 +4,7 @@
 
 let dadosPedidos = [];
 let dadosPosicoes = [];
+let dadosEstoquePulmao = [];
 let resultado = [];
 
 let paginaAtual = 1;
@@ -568,6 +569,54 @@ function lerTXT(arquivo){
         );
 
     });
+
+}
+
+// =====================================
+// ESTOQUE PULMÃO (upload independente)
+// =====================================
+// Arquivo leve — só endereços de Pulmão (ESPECIEENDERECO = "P"),
+// com status (Disponivel/Ocupado/Reservado/Bloqueado/Inativo).
+// Não tem a altura do endereço (TIPEND_PULMAO) — essa continua
+// vindo da Posição de Endereços já carregada no upload do topo.
+// Carrega assim que o arquivo é selecionado, sem precisar clicar
+// em "Processar Dados" (que é só pro fluxo de Abastecimento).
+
+async function carregarEstoquePulmao(){
+
+    const arquivo =
+    document
+    .getElementById("arquivoEstoquePulmao")
+    .files[0];
+
+    if(!arquivo) return;
+
+    try{
+
+        mostrarLoading();
+
+        dadosEstoquePulmao =
+        await lerTXT(arquivo);
+
+        document.getElementById("nomeEstoquePulmao").innerText =
+        "✅ " + arquivo.name + " (" + dadosEstoquePulmao.length.toLocaleString("pt-BR") + " endereços)";
+
+        ocultarLoading();
+
+    }
+
+    catch(erro){
+
+        ocultarLoading();
+
+        console.error(erro);
+
+        alert(
+            "Erro ao ler o arquivo Estoque Pulmão: " +
+            (erro?.message || erro)
+        );
+
+    }
 
 }
 
@@ -5802,6 +5851,876 @@ ${String(item.rua).padStart(3,"0")}
 <td>
 
 ${item.especie || "—"}
+
+</td>
+
+<td style="text-align:center;font-size:9px;color:#666;">
+
+${item.altura || "—"}
+
+</td>
+
+</tr>
+
+`;
+
+    });
+
+    html += `
+
+</tbody>
+
+</table>
+
+<script>
+window.PagedConfig = {
+    after: () => {
+        window.focus();
+        window.print();
+    }
+};
+</script>
+<script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+
+</body>
+
+</html>
+
+`;
+
+    janela.document.open();
+
+    janela.document.write(html);
+
+    janela.document.close();
+
+}
+
+// =====================================
+// ESTOQUE PULMÃO — DISPONIBILIDADE POR ALTURA
+// =====================================
+// Mesma ideia de "Endereços Disponíveis", mas usando o arquivo leve
+// Estoque Pulmão (só Pulmão, atualiza rápido) como base de STATUS,
+// e a Posição de Endereços (já carregada no upload do topo) só como
+// dicionário de altura (TIPEND_PULMAO) e subdivisão por endereço —
+// assim não é preciso reexportar/reprocessar o arquivo pesado toda
+// vez que só a disponibilidade muda.
+
+let estoquePulmao = [];
+
+let subdivisoesSelecionadasEstoquePulmao = null;
+
+function construirMapaAlturaSubdivisaoPorEndereco(){
+
+    const mapa = {};
+
+    dadosPosicoes.forEach(p=>{
+
+        const chave =
+        `${p.CODRUA}.${p.NROPREDIO}.${p.NROAPARTAMENTO}.${p.NROSALA}`;
+
+        mapa[chave] = {
+
+            altura:
+            String(p.TIPEND_PULMAO || "").trim(),
+
+            subdivisao: p.SUBDIVISAO || ""
+
+        };
+
+    });
+
+    return mapa;
+
+}
+
+async function gerarEstoquePulmao(){
+
+    if(!dadosPosicoes.length){
+
+        alert(
+            "Carregue a Posição de Endereços primeiro (upload do topo) — " +
+            "é ela que fornece a altura (TIPEND_PULMAO) de cada endereço."
+        );
+
+        return;
+
+    }
+
+    if(!dadosEstoquePulmao.length){
+
+        alert(
+            "Carregue o arquivo Estoque Pulmão (upload do topo) — é ele " +
+            "que fornece a disponibilidade atual, de forma bem mais leve " +
+            "do que reprocessar a Posição de Endereços inteira."
+        );
+
+        return;
+
+    }
+
+    try{
+
+        mostrarLoading();
+
+        await new Promise(resolve=>requestAnimationFrame(()=>
+            requestAnimationFrame(resolve)
+        ));
+
+        const mapaAltura =
+        construirMapaAlturaSubdivisaoPorEndereco();
+
+        estoquePulmao =
+        dadosEstoquePulmao.map(p=>{
+
+            const rua = Number(p.CODRUA) || 0;
+
+            const endereco =
+            `${p.CODRUA}.${p.NROPREDIO}.${p.NROAPARTAMENTO}.${p.NROSALA}`;
+
+            const info =
+            mapaAltura[endereco] || { altura:"", subdivisao:"" };
+
+            return {
+
+                endereco,
+
+                deposito: p.CODDEPOSITO || "",
+
+                pavilhao: obterPavilhao(rua),
+
+                subdivisao: info.subdivisao,
+
+                rua,
+
+                altura: info.altura,
+
+                status:
+                String(p.STATUS || "").trim(),
+
+                statusNorm:
+                String(p.STATUS || "").toUpperCase().trim()
+
+            };
+
+        });
+
+        estoquePulmao.sort((a,b)=>
+
+            a.rua - b.rua ||
+            a.endereco.localeCompare(b.endereco)
+
+        );
+
+        preencherFiltroAlturaEstoquePulmao();
+
+        preencherFiltroPavilhaoEstoquePulmao();
+
+        preencherFiltroSubdivisaoEstoquePulmao();
+
+        abrirModalEstoquePulmao();
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(
+            "Erro ao gerar Estoque Pulmão: " +
+            (erro?.message || erro)
+        );
+
+    }
+
+    finally{
+
+        ocultarLoading();
+
+    }
+
+}
+
+function preencherFiltroAlturaEstoquePulmao(){
+
+    const select =
+    document.getElementById("filtroEstPulAltura");
+
+    if(!select) return;
+
+    const valorAtual = select.value;
+
+    const alturas =
+    [...new Set(
+        estoquePulmao
+        .map(x=>x.altura)
+        .filter(v=>v !== "")
+    )]
+    .sort();
+
+    select.innerHTML =
+    `<option value="">Todas as alturas</option>` +
+    alturas
+    .map(a=>`<option value="${a}">${a}</option>`)
+    .join("");
+
+    if(alturas.includes(valorAtual)){
+        select.value = valorAtual;
+    }
+
+}
+
+function preencherFiltroPavilhaoEstoquePulmao(){
+
+    const select =
+    document.getElementById("filtroEstPulPavilhao");
+
+    if(!select) return;
+
+    const valorAtual = select.value;
+
+    const nomesConhecidos =
+    PAVILHOES.map(p=>p.nome);
+
+    const pavilhoesPresentes =
+    new Set(
+        estoquePulmao.map(x=>x.pavilhao)
+    );
+
+    const pavilhoes =
+    nomesConhecidos
+    .filter(n=>pavilhoesPresentes.has(n))
+    .concat(
+        pavilhoesPresentes.has("Sem Pavilhão")
+        ? ["Sem Pavilhão"]
+        : []
+    );
+
+    select.innerHTML =
+    `<option value="">Todos os pavilhões</option>` +
+    pavilhoes
+    .map(p=>`<option value="${p}">${p}</option>`)
+    .join("");
+
+    if(pavilhoes.includes(valorAtual)){
+        select.value = valorAtual;
+    }
+
+}
+
+function preencherFiltroSubdivisaoEstoquePulmao(){
+
+    const lista =
+    document.getElementById("dropdownEstPulSubdivisaoLista");
+
+    if(!lista) return;
+
+    const subdivisoes =
+    [...new Set(
+        estoquePulmao
+        .map(x=>x.subdivisao)
+        .filter(v=>v !== "")
+    )]
+    .sort((a,b)=>a.localeCompare(b, "pt-BR"));
+
+    subdivisoesSelecionadasEstoquePulmao = new Set(subdivisoes);
+
+    if(!subdivisoes.length){
+
+        lista.innerHTML =
+        `<div class="dropdown-check-vazio">Nenhuma subdivisão encontrada</div>`;
+
+    } else {
+
+        lista.innerHTML =
+        subdivisoes.map(s=>{
+
+            const marcado =
+            subdivisoesSelecionadasEstoquePulmao.has(s);
+
+            const idSeguro =
+            "chkSubdivEstPul_" + s.replace(/[^a-zA-Z0-9]/g,"_");
+
+            return `<label class="dropdown-check-item" for="${idSeguro}">
+                <input
+                    type="checkbox"
+                    id="${idSeguro}"
+                    value="${s}"
+                    ${marcado ? "checked" : ""}
+                    onchange="alternarSubdivisaoEstoquePulmao('${s.replace(/'/g,"\\'")}', this.checked)">
+                <span>${s}</span>
+            </label>`;
+
+        }).join("");
+
+    }
+
+    atualizarLabelDropdownSubdivisaoEstoquePulmao(subdivisoes.length);
+
+}
+
+function atualizarLabelDropdownSubdivisaoEstoquePulmao(totalSubdivisoes){
+
+    const label =
+    document.getElementById("dropdownEstPulSubdivisaoLabel");
+
+    if(!label) return;
+
+    const total =
+    totalSubdivisoes ??
+    new Set(estoquePulmao.map(x=>x.subdivisao).filter(v=>v!=="")).size;
+
+    const selecionadas =
+    subdivisoesSelecionadasEstoquePulmao
+    ? subdivisoesSelecionadasEstoquePulmao.size
+    : total;
+
+    if(!total || selecionadas === total){
+        label.textContent = "Todas as subdivisões";
+    } else if(selecionadas === 0){
+        label.textContent = "Nenhuma subdivisão";
+    } else {
+        label.textContent = `${selecionadas} de ${total} subdivisões`;
+    }
+
+}
+
+function alternarSubdivisaoEstoquePulmao(nome, marcado){
+
+    if(!subdivisoesSelecionadasEstoquePulmao){
+        subdivisoesSelecionadasEstoquePulmao = new Set();
+    }
+
+    if(marcado){
+        subdivisoesSelecionadasEstoquePulmao.add(nome);
+    } else {
+        subdivisoesSelecionadasEstoquePulmao.delete(nome);
+    }
+
+    atualizarLabelDropdownSubdivisaoEstoquePulmao();
+
+    aplicarFiltrosEstoquePulmao();
+
+}
+
+function marcarTodasSubdivisoesEstoquePulmao(marcarTudo){
+
+    const subdivisoes =
+    [...new Set(
+        estoquePulmao
+        .map(x=>x.subdivisao)
+        .filter(v=>v !== "")
+    )];
+
+    subdivisoesSelecionadasEstoquePulmao =
+    marcarTudo
+    ? new Set(subdivisoes)
+    : new Set();
+
+    const lista =
+    document.getElementById("dropdownEstPulSubdivisaoLista");
+
+    if(lista){
+
+        lista
+        .querySelectorAll("input[type=checkbox]")
+        .forEach(chk=> chk.checked = marcarTudo);
+
+    }
+
+    atualizarLabelDropdownSubdivisaoEstoquePulmao();
+
+    aplicarFiltrosEstoquePulmao();
+
+}
+
+function alternarDropdownSubdivisaoEstoquePulmao(evento){
+
+    evento.stopPropagation();
+
+    const dropdown =
+    document.getElementById("dropdownEstPulSubdivisao");
+
+    if(!dropdown) return;
+
+    const jaAberto =
+    dropdown.classList.contains("aberto");
+
+    dropdown.classList.toggle("aberto", !jaAberto);
+
+    if(!jaAberto){
+
+        setTimeout(()=>{
+
+            document.addEventListener(
+                "click",
+                function fecharAoClicarFora(e){
+
+                    if(!dropdown.contains(e.target)){
+
+                        dropdown.classList.remove("aberto");
+
+                        document.removeEventListener(
+                            "click",
+                            fecharAoClicarFora
+                        );
+
+                    }
+
+                }
+            );
+
+        }, 0);
+
+    }
+
+}
+
+function abrirModalEstoquePulmao(){
+
+    const modal =
+    document.getElementById("modalEstoquePulmao");
+
+    if(!modal){
+
+        alert(
+            "Modal de Estoque Pulmão não encontrado no HTML."
+        );
+
+        return;
+
+    }
+
+    const campoRua = document.getElementById("filtroEstPulRua");
+    const campoEndereco = document.getElementById("filtroEstPulEndereco");
+    const campoPavilhao = document.getElementById("filtroEstPulPavilhao");
+    const campoStatus = document.getElementById("filtroEstPulStatus");
+
+    if(campoRua) campoRua.value = "";
+    if(campoEndereco) campoEndereco.value = "";
+    if(campoPavilhao) campoPavilhao.value = "";
+
+    // Abre já filtrado por "Disponível" — é o uso principal desta
+    // tela — mas o usuário pode trocar pra ver outros status.
+    if(campoStatus) campoStatus.value = "DISPONIVEL";
+
+    document
+    .getElementById("dropdownEstPulSubdivisao")
+    ?.classList.remove("aberto");
+
+    const filtrados =
+    obterEstoquePulmaoFiltrados();
+
+    atualizarKPIsEstoquePulmao(filtrados);
+
+    renderizarTabelaEstoquePulmao(filtrados);
+
+    modal.classList.add("ativo");
+
+}
+
+function fecharModalEstoquePulmao(){
+
+    document
+    .getElementById("modalEstoquePulmao")
+    .classList.remove("ativo");
+
+}
+
+function atualizarKPIsEstoquePulmao(dados){
+
+    document.getElementById("estPulTotal").innerText =
+    dados.length;
+
+    document.getElementById("estPulDisponiveis").innerText =
+    dados.filter(x=>x.statusNorm === "DISPONIVEL").length;
+
+    document.getElementById("estPulOcupados").innerText =
+    dados.filter(x=>x.statusNorm === "OCUPADO").length;
+
+    document.getElementById("estPulRuas").innerText =
+    new Set(
+        dados.map(x=>x.rua)
+    ).size;
+
+}
+
+const LIMITE_LINHAS_TABELA_ESTPUL = 3000;
+
+function renderizarTabelaEstoquePulmao(dados){
+
+    const tbody =
+    document.getElementById("tbodyEstPul");
+
+    if(!tbody) return;
+
+    if(!dados.length){
+
+        tbody.innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:30px;color:#6b7280;">
+        Nenhum endereço encontrado com os critérios atuais.
+        </td></tr>`;
+
+        return;
+
+    }
+
+    const excedeLimite =
+    dados.length > LIMITE_LINHAS_TABELA_ESTPUL;
+
+    const dadosParaExibir =
+    excedeLimite
+    ? dados.slice(0, LIMITE_LINHAS_TABELA_ESTPUL)
+    : dados;
+
+    const linhas =
+    dadosParaExibir.map(item=>
+
+        `<tr>
+            <td>${item.endereco}</td>
+            <td>${item.deposito || "—"}</td>
+            <td>${item.pavilhao || "—"}</td>
+            <td>${item.subdivisao || "—"}</td>
+            <td>${String(item.rua).padStart(3,"0")}</td>
+            <td>${item.status || "—"}</td>
+            <td style="font-size:.75rem;color:var(--text-muted);">${item.altura || "—"}</td>
+        </tr>`
+
+    );
+
+    if(excedeLimite){
+
+        linhas.push(
+            `<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--amber);">
+            Mostrando ${LIMITE_LINHAS_TABELA_ESTPUL.toLocaleString("pt-BR")} de
+            ${dados.length.toLocaleString("pt-BR")} endereços. Use os filtros
+            (rua, status, altura ou endereço) para refinar a busca.
+            </td></tr>`
+        );
+
+    }
+
+    tbody.innerHTML = linhas.join("");
+
+}
+
+function obterEstoquePulmaoFiltrados(){
+
+    const alturaFiltro =
+    document.getElementById("filtroEstPulAltura")?.value || "";
+
+    const statusFiltro =
+    document.getElementById("filtroEstPulStatus")?.value || "";
+
+    const pavilhaoFiltro =
+    document.getElementById("filtroEstPulPavilhao")?.value || "";
+
+    const ruaFiltro =
+    (document.getElementById("filtroEstPulRua")?.value || "")
+    .toLowerCase()
+    .trim();
+
+    const enderecoFiltro =
+    (document.getElementById("filtroEstPulEndereco")?.value || "")
+    .toLowerCase()
+    .trim();
+
+    return estoquePulmao.filter(item=>{
+
+        const alturaOk =
+        !alturaFiltro || item.altura === alturaFiltro;
+
+        const statusOk =
+        !statusFiltro || item.statusNorm === statusFiltro;
+
+        const pavilhaoOk =
+        !pavilhaoFiltro || item.pavilhao === pavilhaoFiltro;
+
+        const subdivisaoOk =
+        !subdivisoesSelecionadasEstoquePulmao ||
+        item.subdivisao === "" ||
+        subdivisoesSelecionadasEstoquePulmao.has(item.subdivisao);
+
+        const ruaOk =
+        !ruaFiltro ||
+        String(item.rua)
+        .toLowerCase()
+        .includes(ruaFiltro);
+
+        const enderecoOk =
+        !enderecoFiltro ||
+        item.endereco
+        .toLowerCase()
+        .includes(enderecoFiltro);
+
+        return alturaOk && statusOk && pavilhaoOk && subdivisaoOk && ruaOk && enderecoOk;
+
+    });
+
+}
+
+function aplicarFiltrosEstoquePulmao(){
+
+    const filtrados =
+    obterEstoquePulmaoFiltrados();
+
+    atualizarKPIsEstoquePulmao(filtrados);
+
+    renderizarTabelaEstoquePulmao(filtrados);
+
+}
+
+function imprimirEstoquePulmaoModal(){
+
+    const dadosFiltrados =
+    obterEstoquePulmaoFiltrados();
+
+    if(!dadosFiltrados.length){
+
+        alert(
+            "Nenhum item para imprimir com os filtros atuais."
+        );
+
+        return;
+
+    }
+
+    const janela = window.open("", "_blank");
+
+    if(!janela){
+
+        alert("Permita pop-ups para este site.");
+
+        return;
+
+    }
+
+    imprimirEstoquePulmao(
+        janela,
+        dadosFiltrados
+    );
+
+}
+
+// =====================================
+// IMPRIMIR ESTOQUE PULMÃO
+// =====================================
+
+function imprimirEstoquePulmao(janela, dadosBase){
+
+    const dados =
+    dadosBase || estoquePulmao;
+
+    if(!dados.length){
+
+        alert("Nenhum item para imprimir.");
+
+        return;
+
+    }
+
+    let html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Estoque Pulmão</title>
+
+<style>
+
+@page{
+
+    size:A4 portrait;
+
+    margin:8mm 8mm 14mm 8mm;
+
+}
+
+*{
+
+    box-sizing:border-box;
+
+}
+
+body{
+
+    font-family:Arial,Helvetica,sans-serif;
+
+    margin:0;
+
+    color:#222;
+
+}
+
+h1{
+
+    margin:0;
+
+    text-align:center;
+
+    color:#0F4C81;
+
+    font-size:22px;
+
+}
+
+.info{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin:15px 0;
+
+    font-size:13px;
+
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+th{
+
+    background:#0F4C81;
+
+    color:#fff;
+
+    padding:10px;
+
+    border:1px solid #DDD;
+
+    font-size:12px;
+
+}
+
+td{
+
+    border:1px solid #DDD;
+
+    padding:8px;
+
+    font-size:11px;
+
+}
+
+@media print{
+
+    th{
+
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+
+🧊 ESTOQUE PULMÃO — DISPONIBILIDADE POR ALTURA
+
+</h1>
+
+<div class="info">
+
+<div>
+
+<b>Data:</b>
+
+${new Date().toLocaleString("pt-BR")}
+
+</div>
+
+<div>
+
+<b>Total:</b>
+
+${dados.length}
+
+</div>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Endereço</th>
+
+<th>Depósito</th>
+
+<th>Pavilhão</th>
+
+<th>Subdivisão</th>
+
+<th>Rua</th>
+
+<th>Status</th>
+
+<th>Altura (TIPEND Pulmão)</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+    dados.forEach(item=>{
+
+        html += `
+
+<tr>
+
+<td>
+
+<b>${item.endereco}</b>
+
+</td>
+
+<td>
+
+${item.deposito || "—"}
+
+</td>
+
+<td>
+
+${item.pavilhao || "—"}
+
+</td>
+
+<td>
+
+${item.subdivisao || "—"}
+
+</td>
+
+<td style="text-align:center;">
+
+${String(item.rua).padStart(3,"0")}
+
+</td>
+
+<td>
+
+${item.status || "—"}
 
 </td>
 

@@ -120,6 +120,38 @@
 
                 </div>
 
+                <!-- ESTOQUE PULMÃO -->
+
+                <div class="upload-box">
+
+                    <label>
+                        🧊 Estoque Pulmão
+                    </label>
+
+                    <label
+                        class="upload-btn"
+                        for="arquivoEstoquePulmao">
+
+                        Selecionar Arquivo
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="arquivoEstoquePulmao"
+                        accept=".txt,.csv"
+                        onchange="carregarEstoquePulmao()">
+
+                    <div
+                        class="upload-nome"
+                        id="nomeEstoquePulmao">
+
+                        Nenhum arquivo selecionado
+
+                    </div>
+
+                </div>
+
             </div>
 
             <br>
@@ -155,6 +187,14 @@
         onclick="gerarEnderecosDisponiveis()">
 
         🟩 Endereços Disponíveis
+
+    </button>
+
+    <button
+        class="btn-exportar"
+        onclick="gerarEstoquePulmao()">
+
+        🧊 Estoque Pulmão
 
     </button>
 
@@ -931,8 +971,208 @@
 
 </div>
 
-<script src="script.js?v=3"></script>
-<script src="sync.js?v=3"></script>
+<!-- ===================================== -->
+<!-- MODAL ESTOQUE PULMÃO -->
+<!-- ===================================== -->
+
+<div
+    class="modal-sugestao"
+    id="modalEstoquePulmao">
+
+    <div class="modal-conteudo">
+
+        <div class="modal-topo">
+
+            <h2>
+                🧊 Estoque Pulmão — Disponibilidade por Altura
+            </h2>
+
+            <button
+                class="btn-fechar"
+                onclick="fecharModalEstoquePulmao()">
+
+                Fechar ✕
+
+            </button>
+
+        </div>
+
+        <div class="modal-corpo">
+
+            <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 18px;max-width:900px;">
+                Usa o arquivo leve <b>Estoque Pulmão</b> (só endereços de Pulmão) como base de
+                status/disponibilidade — muito mais rápido de exportar no dia a dia do que a
+                Posição de Endereços completa. A altura de cada endereço (coluna
+                <b>TIPEND_PULMAO</b>) continua vindo da Posição de Endereços já carregada no
+                upload do topo, cruzada pelo endereço (Rua.Prédio.Apartamento.Sala).
+                Carregue os dois arquivos no topo da página antes de gerar.
+            </p>
+
+            <div class="cards-mov">
+
+                <div class="card-mov">
+                    <h3>Total (filtro atual)</h3>
+                    <span id="estPulTotal">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Disponíveis</h3>
+                    <span id="estPulDisponiveis">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Ocupados</h3>
+                    <span id="estPulOcupados">0</span>
+                </div>
+
+                <div class="card-mov">
+                    <h3>Ruas Distintas</h3>
+                    <span id="estPulRuas">0</span>
+                </div>
+
+            </div>
+
+            <div class="filtros-mov">
+
+                <select
+                    id="filtroEstPulStatus"
+                    onchange="aplicarFiltrosEstoquePulmao()">
+
+                    <option value="">Todos os status</option>
+                    <option value="DISPONIVEL" selected>Disponível</option>
+                    <option value="OCUPADO">Ocupado</option>
+                    <option value="RESERVADO">Reservado</option>
+                    <option value="BLOQUEADO">Bloqueado</option>
+                    <option value="INATIVO">Inativo</option>
+
+                </select>
+
+                <select
+                    id="filtroEstPulAltura"
+                    onchange="aplicarFiltrosEstoquePulmao()">
+
+                    <option value="">Todas as alturas</option>
+
+                </select>
+
+                <select
+                    id="filtroEstPulPavilhao"
+                    onchange="aplicarFiltrosEstoquePulmao()">
+
+                    <option value="">Todos os pavilhões</option>
+
+                </select>
+
+                <div
+                    class="dropdown-check"
+                    id="dropdownEstPulSubdivisao">
+
+                    <button
+                        type="button"
+                        class="dropdown-check-btn"
+                        onclick="alternarDropdownSubdivisaoEstoquePulmao(event)">
+
+                        <span id="dropdownEstPulSubdivisaoLabel">Todas as subdivisões</span>
+                        <span class="seta">▼</span>
+
+                    </button>
+
+                    <div
+                        class="dropdown-check-painel"
+                        id="dropdownEstPulSubdivisaoPainel">
+
+                        <div class="dropdown-check-acoes">
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesEstoquePulmao(true)">
+                                Marcar todas
+                            </button>
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesEstoquePulmao(false)">
+                                Desmarcar todas
+                            </button>
+
+                        </div>
+
+                        <div id="dropdownEstPulSubdivisaoLista"></div>
+
+                    </div>
+
+                </div>
+
+                <input
+                    type="text"
+                    id="filtroEstPulRua"
+                    placeholder="Filtrar Rua"
+                    oninput="aplicarFiltrosEstoquePulmao()">
+
+                <button
+                    class="btn-exportar"
+                    onclick="gerarEstoquePulmao()">
+
+                    🔄 Atualizar
+
+                </button>
+
+            </div>
+
+            <div class="filtros-mov">
+
+                <input
+                    type="text"
+                    id="filtroEstPulEndereco"
+                    placeholder="Filtrar Endereço"
+                    oninput="aplicarFiltrosEstoquePulmao()">
+
+                <button
+                    class="btn-exportar"
+                    onclick="imprimirEstoquePulmaoModal()">
+
+                    🖨️ Imprimir Filtrados
+
+                </button>
+
+            </div>
+
+            <div class="tabela-container">
+
+                <table class="tabela-mov">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Endereço</th>
+                            <th>Depósito</th>
+                            <th>Pavilhão</th>
+                            <th>Subdivisão</th>
+                            <th>Rua</th>
+                            <th>Status</th>
+                            <th>Altura (TIPEND Pulmão)</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="tbodyEstPul">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="script.js?v=4"></script>
+<script src="sync.js?v=4"></script>
 <script>
     (function iniciarAbertura(){
         const tela = document.getElementById('telaAbertura');
