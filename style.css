@@ -1,27 +1,28 @@
 /* =========================================================
-   GERADOR DE ABASTECIMENTO PCP — PAINEL INDUSTRIAL
-   Tokens: grafite + âmbar (ação) / verde (ok) / vermelho (crítico) / azul (neutro)
+   GERADOR DE ABASTECIMENTO PCP — PAINEL COMERCIAL ZAFFARI
+   Tokens: navy (base) + laranja Zaffari (ação) / verde (ok) /
+   vermelho Stok Center (crítico) / azul (neutro)
    Tipografia: Oswald (display) + Inter (corpo) + JetBrains Mono (dados)
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root{
-    --bg:            #14181C;
-    --surface:       #1D2329;
-    --surface-alt:   #232A31;
-    --border:        #2A323B;
-    --border-light:  #38424D;
+    --bg:            #080B1C;
+    --surface:       #131B3D;
+    --surface-alt:   #1A2450;
+    --border:        #2A3566;
+    --border-light:  #3B4A85;
 
-    --text:          #E7ECF1;
-    --text-muted:    #8B97A3;
+    --text:          #EEF1F8;
+    --text-muted:    #8A93BA;
 
-    --amber:         #F2A93B;
-    --amber-dim:     #6B5525;
+    --amber:         #E48B00;
+    --amber-dim:     #B87000;
     --green:         #3DCB82;
     --green-dim:     #1F4B36;
-    --red:           #E8564F;
-    --red-dim:       #4E2523;
+    --red:           #E4384A;
+    --red-dim:       #4E2027;
     --blue:          #4C8FD1;
     --blue-dim:      #223A52;
     --purple:        #A78BFA;
@@ -44,7 +45,7 @@
 
 body{
     background:
-        radial-gradient(ellipse at top, #1A2027 0%, var(--bg) 55%);
+        radial-gradient(ellipse at top, var(--surface) 0%, var(--bg) 55%);
     background-attachment:fixed;
     padding:25px;
     color:var(--text);
@@ -145,15 +146,15 @@ ABERTURA — MARCAS (MOBILE)
 .abertura-encontro span{
     flex:1;
     height:1px;
-    background:#C99227;
+    background:#E48B00;
 }
 
 .abertura-encontro i{
     width:10px;
     height:10px;
     border-radius:50%;
-    background:#C99227;
-    box-shadow:0 0 0 6px rgba(201,146,39,.14);
+    background:#E48B00;
+    box-shadow:0 0 0 6px rgba(228,139,0,.14);
     animation:aberturaPulso 1.4s ease-in-out 1.45s infinite;
 }
 
