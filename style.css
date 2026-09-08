@@ -1,32 +1,32 @@
 /* =========================================================
    GERADOR DE ABASTECIMENTO PCP — PAINEL COMERCIAL ZAFFARI
-   Tokens: navy (base) + laranja Zaffari (ação) / verde (ok) /
-   vermelho Stok Center (crítico) / azul (neutro)
+   Tokens: branco/claro (base) + laranja Zaffari (ação) / verde (ok) /
+   vermelho Stok Center (crítico) / azul-navy (neutro)
    Tipografia: Oswald (display) + Inter (corpo) + JetBrains Mono (dados)
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root{
-    --bg:            #080B1C;
-    --surface:       #131B3D;
-    --surface-alt:   #1A2450;
-    --border:        #2A3566;
-    --border-light:  #3B4A85;
+    --bg:            #F3F5FB;
+    --surface:       #FFFFFF;
+    --surface-alt:   #F1F4FA;
+    --border:        #DEE3F0;
+    --border-light:  #C7CFE6;
 
-    --text:          #EEF1F8;
-    --text-muted:    #8A93BA;
+    --text:          #182552;
+    --text-muted:    #6B7593;
 
     --amber:         #E48B00;
-    --amber-dim:     #B87000;
-    --green:         #3DCB82;
-    --green-dim:     #1F4B36;
-    --red:           #E4384A;
-    --red-dim:       #4E2027;
-    --blue:          #4C8FD1;
-    --blue-dim:      #223A52;
-    --purple:        #A78BFA;
-    --purple-dim:    #3D3568;
+    --amber-dim:     #C97600;
+    --green:         #1E9E5C;
+    --green-dim:     #E3F7EC;
+    --red:           #D9333F;
+    --red-dim:       #FBE6E8;
+    --blue:          #2E63A8;
+    --blue-dim:      #E4ECF9;
+    --purple:        #7C5CE0;
+    --purple-dim:    #EDE8FC;
 
     --radius:        6px;
     --radius-sm:     4px;
@@ -45,7 +45,7 @@
 
 body{
     background:
-        radial-gradient(ellipse at top, var(--surface) 0%, var(--bg) 55%);
+        radial-gradient(ellipse at top, #FFFFFF 0%, var(--bg) 60%);
     background-attachment:fixed;
     padding:25px;
     color:var(--text);
@@ -265,7 +265,7 @@ CARDS
     border-radius:var(--radius);
     padding:25px;
     box-shadow:
-        0 10px 30px rgba(0,0,0,.35);
+        0 6px 22px rgba(24,37,82,.08);
     margin-bottom:25px;
 }
 
@@ -317,7 +317,7 @@ UPLOADS
     transform:translateY(-2px);
 
     box-shadow:
-        0 6px 20px rgba(242,169,59,.12);
+        0 6px 20px rgba(228,139,0,.12);
 }
 
 .upload-box label{
@@ -479,7 +479,7 @@ Cor da borda lateral = significado real do dado
     text-align:left;
 
     box-shadow:
-        0 8px 24px rgba(0,0,0,.3);
+        0 4px 14px rgba(24,37,82,.06);
 }
 
 .kpi-card h3{
@@ -673,7 +673,7 @@ FILTRO PAVILHÃO — MULTI-SELEÇÃO
 
     padding:8px;
 
-    box-shadow:0 8px 24px rgba(0,0,0,.4);
+    box-shadow:0 4px 14px rgba(24,37,82,.08);
 }
 
 .filtro-pavilhao-item{
@@ -922,12 +922,12 @@ td{
 
 tbody tr:nth-child(even){
 
-    background:rgba(255,255,255,.02);
+    background:rgba(24,37,82,.02);
 }
 
 tbody tr:hover{
 
-    background:rgba(76,143,209,.1);
+    background:rgba(46,99,168,.08);
 }
 
 /* =========================
@@ -1046,7 +1046,7 @@ RESPONSIVO
     position:fixed;
     inset:0;
 
-    background:rgba(0,0,0,.7);
+    background:rgba(16,22,48,.55);
 
     display:none;
 
@@ -1080,7 +1080,7 @@ RESPONSIVO
 
     flex-direction:column;
 
-    box-shadow:0 25px 60px rgba(0,0,0,.55);
+    box-shadow:0 25px 60px rgba(24,37,82,.22);
 
 }
 
@@ -1392,7 +1392,7 @@ RESPONSIVO
 
     border-radius:var(--radius-sm);
 
-    box-shadow:0 12px 28px rgba(0,0,0,.5);
+    box-shadow:0 8px 20px rgba(24,37,82,.12);
 
     z-index:100;
 
@@ -1548,7 +1548,7 @@ RESPONSIVO
 
 .tabela-mov tr:hover{
 
-    background:rgba(76,143,209,.08);
+    background:rgba(46,99,168,.07);
 
 }
 
@@ -1766,7 +1766,7 @@ SINCRONIZAÇÃO AUTOMÁTICA
 
 .sync-scan{
 
-    background:rgba(242,169,59,.12);
+    background:rgba(228,139,0,.12);
 
     color:var(--amber);
 
@@ -1782,7 +1782,7 @@ SINCRONIZAÇÃO AUTOMÁTICA
 
 .sync-on{
 
-    background:rgba(61,203,130,.12);
+    background:rgba(30,158,92,.12);
 
     color:var(--green);
 
