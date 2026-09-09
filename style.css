@@ -441,6 +441,53 @@ UPLOADS
     font-size:.82rem;
 }
 
+.upload-nome-salvo{
+
+    display:inline-block;
+
+    margin-top:4px;
+
+    color:var(--green);
+
+    font-family:var(--font-mono);
+
+    font-size:.72rem;
+}
+
+.btn-esquecer-posicoes{
+
+    display:inline-block;
+
+    margin-top:12px;
+
+    background:transparent;
+
+    border:1px solid var(--red);
+
+    color:var(--red);
+
+    padding:6px 14px;
+
+    border-radius:var(--radius-sm);
+
+    cursor:pointer;
+
+    font-weight:600;
+
+    font-size:.75rem;
+
+    letter-spacing:.03em;
+
+    transition:.2s;
+}
+
+.btn-esquecer-posicoes:hover{
+
+    background:var(--red);
+
+    color:#fff;
+}
+
 /* =========================
 BOTÕES
 ========================= */

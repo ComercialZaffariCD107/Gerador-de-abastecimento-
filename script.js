@@ -372,15 +372,17 @@ async function processar(){
         .getElementById("arquivoPosicoes")
         .files[0];
 
-        // A Posição de Endereços é o único arquivo realmente
-        // obrigatório — é o que alimenta "Endereços Disponíveis",
-        // "Liberação de Endereços 2.10" e a base de posições usada
-        // em quase tudo. O Metabase Pedidos só é necessário para
-        // calcular o abastecimento (cruzamento com pedido/SKU).
-        if(!arquivoPosicoes){
+        // A Posição de Endereços só é obrigatória na primeira vez.
+        // Depois de processada uma vez, ela fica salva no navegador
+        // (cache local — ver cache-posicoes.js) e é reaproveitada
+        // automaticamente nas próximas visitas. O usuário só precisa
+        // selecionar o arquivo de novo quando quiser ATUALIZAR a
+        // posição (algo periódico, não a cada uso do site).
+        if(!arquivoPosicoes && !dadosPosicoes.length){
 
             alert(
-                "Selecione ao menos o arquivo de Posição de Endereços."
+                "Selecione ao menos o arquivo de Posição de Endereços " +
+                "(só na primeira vez — depois disso ele fica salvo)."
             );
 
             ocultarLoading();
@@ -404,10 +406,29 @@ async function processar(){
 
         }
 
-        dadosPosicoes =
-        await lerTXT(
-            arquivoPosicoes
-        );
+        if(arquivoPosicoes){
+
+            dadosPosicoes =
+            await lerTXT(
+                arquivoPosicoes
+            );
+
+            // Salva/atualiza a versão em cache local, para não
+            // precisar selecionar o arquivo de novo nas próximas vezes.
+            await posicoesSalvarCache(
+                arquivoPosicoes.name,
+                dadosPosicoes
+            );
+
+            posicoesAtualizarBadgeUI(
+                arquivoPosicoes.name,
+                Date.now()
+            );
+
+        }
+        // Se nenhum arquivo novo foi selecionado, dadosPosicoes já
+        // está preenchido com o que foi restaurado do cache local
+        // ao abrir a página.
 
 console.log(
     "PRIMEIRA LINHA POSICOES:"
