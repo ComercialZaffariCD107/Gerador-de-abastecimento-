@@ -5149,6 +5149,30 @@ table{
 
     border-collapse:collapse;
 
+    /* Larguras fixas por coluna (colgroup) — sem isso a tabela
+       de 12 colunas estourava a largura do A4 e cortava
+       "Mover para (1.5)" e "TIPEND Destino". */
+    table-layout:fixed;
+
+}
+
+thead{
+
+    display:table-header-group;
+
+}
+
+tr{
+
+    page-break-inside:avoid;
+    break-inside:avoid;
+
+}
+
+.nowrap{
+
+    white-space:nowrap;
+
 }
 
 th{
@@ -5157,11 +5181,19 @@ th{
 
     color:#fff;
 
-    padding:10px;
+    padding:5px 3px;
 
     border:1px solid #DDD;
 
-    font-size:12px;
+    font-size:9px;
+
+    line-height:1.2;
+
+    text-align:center;
+
+    vertical-align:middle;
+
+    overflow-wrap:break-word;
 
 }
 
@@ -5169,9 +5201,17 @@ td{
 
     border:1px solid #DDD;
 
-    padding:8px;
+    padding:4px 3px;
 
-    font-size:11px;
+    font-size:9px;
+
+    line-height:1.25;
+
+    vertical-align:middle;
+
+    overflow-wrap:break-word;
+
+    word-break:break-word;
 
 }
 
@@ -5256,6 +5296,21 @@ ${dados.length}
 </div>
 
 <table>
+
+<colgroup>
+<col style="width:7%">
+<col style="width:17%">
+<col style="width:4%">
+<col style="width:8%">
+<col style="width:9%">
+<col style="width:6%">
+<col style="width:10%">
+<col style="width:7%">
+<col style="width:5%">
+<col style="width:7%">
+<col style="width:12%">
+<col style="width:8%">
+</colgroup>
 
 <thead>
 
@@ -5348,7 +5403,7 @@ ${String(item.ruaApanha).padStart(3,"0")}
 
 </td>
 
-<td>
+<td class="nowrap" style="text-align:center;">
 
 ${item.enderecoAtual}
 
@@ -5372,9 +5427,9 @@ ${item.ocupacao !== null ? item.ocupacao.toFixed(0) + "%" : "N/D"}
 
 </td>
 
-<td>
+<td style="text-align:center;">
 
-${item.enderecoDestino || "Sem endereço 1.5 livre em nenhuma rua"}${item.enderecoDestino && item.pavilhaoDestino && item.pavilhaoDestino !== item.pavilhao ? `<br><span style="font-size:9px;color:#b45309;font-weight:bold;">↪ ${item.pavilhaoDestino}</span>` : ""}
+${item.enderecoDestino ? `<span class="nowrap">${item.enderecoDestino}</span>` : "Sem endereço 1.5 livre em nenhuma rua"}${item.enderecoDestino && item.pavilhaoDestino && item.pavilhaoDestino !== item.pavilhao ? `<br><span style="font-size:8px;color:#b45309;font-weight:bold;">↪ ${item.pavilhaoDestino}</span>` : ""}
 
 </td>
 
