@@ -750,6 +750,46 @@
 
                 </select>
 
+                <div
+                    class="dropdown-check"
+                    id="dropdownLiber210Subdivisao">
+
+                    <button
+                        type="button"
+                        class="dropdown-check-btn"
+                        onclick="alternarDropdownSubdivisaoLiberacao210(event)">
+
+                        <span id="dropdownLiber210SubdivisaoLabel">Todas as linhas</span>
+                        <span class="seta">▼</span>
+
+                    </button>
+
+                    <div
+                        class="dropdown-check-painel"
+                        id="dropdownLiber210SubdivisaoPainel">
+
+                        <div class="dropdown-check-acoes">
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesLiberacao210(true)">
+                                Marcar todas
+                            </button>
+
+                            <button
+                                type="button"
+                                onclick="marcarTodasSubdivisoesLiberacao210(false)">
+                                Desmarcar todas
+                            </button>
+
+                        </div>
+
+                        <div id="dropdownLiber210SubdivisaoLista"></div>
+
+                    </div>
+
+                </div>
+
                 <button
                     class="btn-exportar"
                     onclick="imprimirLiberacao210Modal()">
@@ -772,6 +812,7 @@
                             <th>Produto</th>
                             <th>Rua</th>
                             <th>Pavilhão</th>
+                            <th>Linha</th>
                             <th>Rua Apanha</th>
                             <th>Endereço 2.10 Atual</th>
                             <th>TIPEND Atual</th>

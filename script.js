@@ -4389,6 +4389,36 @@ async function gerarLiberacao210(){
             dadosPosicoes
         );
 
+        // Linha de separação (SUBDIVISAO) da apanha de cada SKU —
+        // usada como reserva quando o próprio endereço 2.10 vem
+        // sem subdivisão preenchida na Posição de Endereços.
+        const mapaSubdivisaoApanhaPorSku = {};
+
+        dadosPosicoes.forEach(p=>{
+
+            if(!String(p.ESPECIE_END || "").toUpperCase().includes("APANHA")){
+                return;
+            }
+
+            const sub = String(p.SUBDIVISAO || "").trim();
+
+            if(!sub) return;
+
+            const skuBruto = String(p.CODIGO || "").trim();
+
+            const skuLimpo =
+            skuBruto.replace(",00","").replace(".00","");
+
+            if(mapaSubdivisaoApanhaPorSku[skuBruto] === undefined){
+                mapaSubdivisaoApanhaPorSku[skuBruto] = sub;
+            }
+
+            if(mapaSubdivisaoApanhaPorSku[skuLimpo] === undefined){
+                mapaSubdivisaoApanhaPorSku[skuLimpo] = sub;
+            }
+
+        });
+
         liberacao210 = [];
 
         dadosPosicoes.forEach(p=>{
@@ -4478,6 +4508,14 @@ async function gerarLiberacao210(){
                 // é o espaço que está sendo liberado.
                 pavilhao: obterPavilhao(p.CODRUA),
 
+                // Linha de separação: a do próprio endereço 2.10;
+                // se vier vazia, a da apanha do SKU.
+                subdivisao:
+                String(p.SUBDIVISAO || "").trim() ||
+                mapaSubdivisaoApanhaPorSku[skuAtual] ||
+                mapaSubdivisaoApanhaPorSku[skuAtual.replace(",00","").replace(".00","")] ||
+                "",
+
                 ruaApanha,
 
                 enderecoAtual,
@@ -4504,7 +4542,26 @@ async function gerarLiberacao210(){
 
         });
 
-        liberacao210.sort((a,b)=> a.caixas - b.caixas);
+        // Ordem crescente pelo endereço 2.10 de ORIGEM
+        // (rua → prédio → apartamento → sala), comparando cada
+        // parte como número — assim 096.9 vem antes de 096.10 e a
+        // lista segue a sequência física do pulmão.
+        liberacao210.sort((a,b)=>{
+
+            const pa = String(a.enderecoAtual).split(".").map(Number);
+            const pb = String(b.enderecoAtual).split(".").map(Number);
+
+            for(let i = 0; i < Math.max(pa.length, pb.length); i++){
+
+                const diff = (pa[i] || 0) - (pb[i] || 0);
+
+                if(diff) return diff;
+
+            }
+
+            return 0;
+
+        });
 
         abrirModalLiberacao210();
 
@@ -4552,6 +4609,12 @@ function abrirModalLiberacao210(){
     // O pavilhão escolhido é mantido entre um "Atualizar" e
     // outro (se ainda existir nos dados), SKU/Rua são limpos.
     preencherFiltroPavilhaoLiberacao210();
+
+    document
+    .getElementById("dropdownLiber210Subdivisao")
+    ?.classList.remove("aberto");
+
+    preencherFiltroSubdivisaoLiberacao210();
 
     aplicarFiltrosLiberacao210();
 
@@ -4633,6 +4696,180 @@ function preencherFiltroPavilhaoLiberacao210(){
 
 }
 
+// =====================================
+// FILTRO DE LINHA DE SEPARAÇÃO (SUBDIVISÃO) — LIBERAÇÃO 2.10
+// =====================================
+// Mesmo padrão do dropdown de subdivisões do Estoque Pulmão:
+// checkboxes, null = "todas marcadas".
+
+let subdivisoesSelecionadasLiberacao210 = null;
+
+function listarSubdivisoesLiberacao210(){
+
+    return [...new Set(
+        liberacao210
+        .map(x=>x.subdivisao)
+        .filter(v=>v !== "")
+    )]
+    .sort((a,b)=>
+        a.localeCompare(b, "pt-BR", { sensitivity:"base", numeric:true })
+    );
+
+}
+
+function preencherFiltroSubdivisaoLiberacao210(){
+
+    const lista =
+    document.getElementById("dropdownLiber210SubdivisaoLista");
+
+    if(!lista) return;
+
+    const subdivisoes =
+    listarSubdivisoesLiberacao210();
+
+    // Sempre que a lista é (re)gerada, começa com tudo marcado.
+    subdivisoesSelecionadasLiberacao210 = new Set(subdivisoes);
+
+    if(!subdivisoes.length){
+
+        lista.innerHTML =
+        `<div class="dropdown-check-vazio">Nenhuma linha de separação encontrada</div>`;
+
+    } else {
+
+        lista.innerHTML =
+        subdivisoes.map(s=>{
+
+            const qtd =
+            liberacao210.filter(x=>x.subdivisao === s).length;
+
+            const idSeguro =
+            "chkSubdivLiber210_" + s.replace(/[^a-zA-Z0-9]/g,"_");
+
+            return `<label class="dropdown-check-item" for="${idSeguro}">
+                <input
+                    type="checkbox"
+                    id="${idSeguro}"
+                    value="${s}"
+                    checked
+                    onchange="alternarSubdivisaoLiberacao210('${s.replace(/'/g,"\\'")}', this.checked)">
+                <span>${s} (${qtd})</span>
+            </label>`;
+
+        }).join("");
+
+    }
+
+    atualizarLabelDropdownSubdivisaoLiberacao210(subdivisoes.length);
+
+}
+
+function atualizarLabelDropdownSubdivisaoLiberacao210(totalSubdivisoes){
+
+    const label =
+    document.getElementById("dropdownLiber210SubdivisaoLabel");
+
+    if(!label) return;
+
+    const total =
+    totalSubdivisoes ??
+    listarSubdivisoesLiberacao210().length;
+
+    const selecionadas =
+    subdivisoesSelecionadasLiberacao210
+    ? subdivisoesSelecionadasLiberacao210.size
+    : total;
+
+    if(!total || selecionadas === total){
+        label.textContent = "Todas as linhas";
+    } else if(selecionadas === 0){
+        label.textContent = "Nenhuma linha";
+    } else if(selecionadas === 1){
+        label.textContent = [...subdivisoesSelecionadasLiberacao210][0];
+    } else {
+        label.textContent = `${selecionadas} de ${total} linhas`;
+    }
+
+}
+
+function alternarSubdivisaoLiberacao210(nome, marcado){
+
+    if(!subdivisoesSelecionadasLiberacao210){
+        subdivisoesSelecionadasLiberacao210 = new Set();
+    }
+
+    if(marcado){
+        subdivisoesSelecionadasLiberacao210.add(nome);
+    } else {
+        subdivisoesSelecionadasLiberacao210.delete(nome);
+    }
+
+    atualizarLabelDropdownSubdivisaoLiberacao210();
+
+    aplicarFiltrosLiberacao210();
+
+}
+
+function marcarTodasSubdivisoesLiberacao210(marcarTudo){
+
+    subdivisoesSelecionadasLiberacao210 =
+    marcarTudo
+    ? new Set(listarSubdivisoesLiberacao210())
+    : new Set();
+
+    document
+    .getElementById("dropdownLiber210SubdivisaoLista")
+    ?.querySelectorAll("input[type=checkbox]")
+    .forEach(chk=> chk.checked = marcarTudo);
+
+    atualizarLabelDropdownSubdivisaoLiberacao210();
+
+    aplicarFiltrosLiberacao210();
+
+}
+
+function alternarDropdownSubdivisaoLiberacao210(evento){
+
+    evento.stopPropagation();
+
+    const dropdown =
+    document.getElementById("dropdownLiber210Subdivisao");
+
+    if(!dropdown) return;
+
+    const jaAberto =
+    dropdown.classList.contains("aberto");
+
+    dropdown.classList.toggle("aberto", !jaAberto);
+
+    if(!jaAberto){
+
+        setTimeout(()=>{
+
+            document.addEventListener(
+                "click",
+                function fecharAoClicarFora(e){
+
+                    if(!dropdown.contains(e.target)){
+
+                        dropdown.classList.remove("aberto");
+
+                        document.removeEventListener(
+                            "click",
+                            fecharAoClicarFora
+                        );
+
+                    }
+
+                }
+            );
+
+        }, 0);
+
+    }
+
+}
+
 function renderizarTabelaLiberacao210(dados){
 
     const tbody =
@@ -4641,7 +4878,7 @@ function renderizarTabelaLiberacao210(dados){
     if(!dados.length){
 
         tbody.innerHTML =
-        `<tr><td colspan="11" style="text-align:center;padding:30px;color:#6b7280;">
+        `<tr><td colspan="12" style="text-align:center;padding:30px;color:#6b7280;">
         Nenhum endereço 2.10 com pallet baixo encontrado com os critérios atuais.
         </td></tr>`;
 
@@ -4685,6 +4922,7 @@ function renderizarTabelaLiberacao210(dados){
             <td style="text-align:left;">${item.descricao}</td>
             <td>${String(item.rua).padStart(3,"0")}</td>
             <td style="white-space:nowrap;">${item.pavilhao}</td>
+            <td style="white-space:nowrap;">${item.subdivisao || "—"}</td>
             <td>${String(item.ruaApanha).padStart(3,"0")}</td>
             <td>${item.enderecoAtual}</td>
             <td style="font-size:.75rem;color:var(--text-muted);">${item.tipendAtual || "—"}</td>
@@ -4736,7 +4974,14 @@ function obterLiberacao210Filtrada(){
         !pavilhaoFiltro ||
         item.pavilhao === pavilhaoFiltro;
 
-        return skuOk && ruaOk && pavilhaoOk;
+        // Item sem linha de separação no dado sempre passa — o
+        // filtro só restringe linhas conhecidas.
+        const subdivisaoOk =
+        !subdivisoesSelecionadasLiberacao210 ||
+        item.subdivisao === "" ||
+        subdivisoesSelecionadasLiberacao210.has(item.subdivisao);
+
+        return skuOk && ruaOk && pavilhaoOk && subdivisaoOk;
 
     });
 
@@ -4761,7 +5006,7 @@ function imprimirLiberacao210Modal(){
     if(!dadosFiltrados.length){
 
         alert(
-            "Nenhum item para imprimir com os filtros de SKU/Rua/Pavilhão atuais."
+            "Nenhum item para imprimir com os filtros de SKU/Rua/Pavilhão/Linha atuais."
         );
 
         return;
@@ -4796,6 +5041,17 @@ function imprimirLiberacao210(janela, dadosBase){
 
     const pavilhaoFiltroPrint =
     document.getElementById("filtroLiber210Pavilhao")?.value || "";
+
+    const totalLinhasPrint =
+    listarSubdivisoesLiberacao210().length;
+
+    const linhasFiltroPrint =
+    !subdivisoesSelecionadasLiberacao210 ||
+    subdivisoesSelecionadasLiberacao210.size === totalLinhasPrint
+    ? "Todas"
+    : [...subdivisoesSelecionadasLiberacao210]
+      .sort((a,b)=>a.localeCompare(b,"pt-BR",{ sensitivity:"base", numeric:true }))
+      .join(", ") || "Nenhuma";
 
     if(!dados.length){
 
@@ -4983,6 +5239,14 @@ ${pavilhaoFiltroPrint || "Todos"}
 
 <div>
 
+<b>Linha:</b>
+
+${linhasFiltroPrint}
+
+</div>
+
+<div>
+
 <b>Total:</b>
 
 ${dados.length}
@@ -5004,6 +5268,8 @@ ${dados.length}
 <th>Rua</th>
 
 <th>Pavilhão</th>
+
+<th>Linha</th>
 
 <th>Rua Apanha</th>
 
@@ -5067,6 +5333,12 @@ ${String(item.rua).padStart(3,"0")}
 <td style="text-align:center;white-space:nowrap;">
 
 ${item.pavilhao}
+
+</td>
+
+<td style="text-align:center;white-space:nowrap;">
+
+${item.subdivisao || "—"}
 
 </td>
 
