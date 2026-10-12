@@ -742,6 +742,14 @@
                     placeholder="Filtrar Rua"
                     oninput="aplicarFiltrosLiberacao210()">
 
+                <select
+                    id="filtroLiber210Pavilhao"
+                    onchange="aplicarFiltrosLiberacao210()">
+
+                    <option value="">Todos os pavilhões</option>
+
+                </select>
+
                 <button
                     class="btn-exportar"
                     onclick="imprimirLiberacao210Modal()">
@@ -763,6 +771,7 @@
                             <th>SKU</th>
                             <th>Produto</th>
                             <th>Rua</th>
+                            <th>Pavilhão</th>
                             <th>Rua Apanha</th>
                             <th>Endereço 2.10 Atual</th>
                             <th>TIPEND Atual</th>

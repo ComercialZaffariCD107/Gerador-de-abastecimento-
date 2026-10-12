@@ -4473,6 +4473,11 @@ async function gerarLiberacao210(){
 
                 rua: Number(p.CODRUA) || 0,
 
+                // Pavilhão do endereço 2.10 de ORIGEM (onde o
+                // pallet está hoje) — é o que o filtro usa, porque
+                // é o espaço que está sendo liberado.
+                pavilhao: obterPavilhao(p.CODRUA),
+
                 ruaApanha,
 
                 enderecoAtual,
@@ -4490,7 +4495,10 @@ async function gerarLiberacao210(){
                 enderecoDestino,
 
                 tipendDestino:
-                destino ? String(destino.TIPEND_PULMAO || "").trim() : ""
+                destino ? String(destino.TIPEND_PULMAO || "").trim() : "",
+
+                pavilhaoDestino:
+                destino ? obterPavilhao(destino.CODRUA) : ""
 
             });
 
@@ -4541,11 +4549,11 @@ function abrirModalLiberacao210(){
 
     document.getElementById("filtroLiber210Rua").value = "";
 
-    atualizarKPIsLiberacao210();
+    // O pavilhão escolhido é mantido entre um "Atualizar" e
+    // outro (se ainda existir nos dados), SKU/Rua são limpos.
+    preencherFiltroPavilhaoLiberacao210();
 
-    renderizarTabelaLiberacao210(
-        liberacao210
-    );
+    aplicarFiltrosLiberacao210();
 
     modal.classList.add("ativo");
 
@@ -4559,21 +4567,69 @@ function fecharModalLiberacao210(){
 
 }
 
-function atualizarKPIsLiberacao210(){
+function atualizarKPIsLiberacao210(dadosBase){
+
+    // KPIs acompanham os filtros (SKU / Rua / Pavilhão), assim
+    // dá pra ver quanto se libera só no pavilhão selecionado.
+    const dados =
+    dadosBase || liberacao210;
 
     document.getElementById("liber210Total").innerText =
-    liberacao210.length;
+    dados.length;
 
     document.getElementById("liber210SemDestino").innerText =
-    liberacao210.filter(x=>!x.enderecoDestino).length;
+    dados.filter(x=>!x.enderecoDestino).length;
 
     document.getElementById("liber210ComDestino").innerText =
-    liberacao210.filter(x=>x.enderecoDestino).length;
+    dados.filter(x=>x.enderecoDestino).length;
 
     document.getElementById("liber210Caixas").innerText =
     formatarCaixas(
-        liberacao210.reduce((s,x)=>s+x.caixas,0)
+        dados.reduce((s,x)=>s+x.caixas,0)
     );
+
+}
+
+function preencherFiltroPavilhaoLiberacao210(){
+
+    const select =
+    document.getElementById("filtroLiber210Pavilhao");
+
+    if(!select) return;
+
+    const valorAtual = select.value;
+
+    const nomesConhecidos =
+    PAVILHOES.map(p=>p.nome);
+
+    const pavilhoesPresentes =
+    new Set(
+        liberacao210.map(x=>x.pavilhao)
+    );
+
+    const pavilhoes =
+    nomesConhecidos
+    .filter(n=>pavilhoesPresentes.has(n))
+    .concat(
+        pavilhoesPresentes.has("Sem Pavilhão")
+        ? ["Sem Pavilhão"]
+        : []
+    );
+
+    select.innerHTML =
+    `<option value="">Todos os pavilhões</option>` +
+    pavilhoes
+    .map(p=>{
+        const qtd =
+        liberacao210.filter(x=>x.pavilhao === p).length;
+        return `<option value="${p}">${p} (${qtd})</option>`;
+    })
+    .join("");
+
+    select.value =
+    pavilhoes.includes(valorAtual)
+    ? valorAtual
+    : "";
 
 }
 
@@ -4585,7 +4641,7 @@ function renderizarTabelaLiberacao210(dados){
     if(!dados.length){
 
         tbody.innerHTML =
-        `<tr><td colspan="10" style="text-align:center;padding:30px;color:#6b7280;">
+        `<tr><td colspan="11" style="text-align:center;padding:30px;color:#6b7280;">
         Nenhum endereço 2.10 com pallet baixo encontrado com os critérios atuais.
         </td></tr>`;
 
@@ -4610,9 +4666,17 @@ function renderizarTabelaLiberacao210(dados){
         ? `${item.ocupacao.toFixed(0)}%`
         : "N/D";
 
+        const outroPavilhao =
+        item.enderecoDestino &&
+        item.pavilhaoDestino &&
+        item.pavilhaoDestino !== item.pavilhao;
+
         const moverParaTexto =
         item.enderecoDestino
-        ? item.enderecoDestino
+        ? item.enderecoDestino +
+          (outroPavilhao
+          ? `<div style="font-size:.7rem;color:#d97706;font-weight:600;">↪ ${item.pavilhaoDestino}</div>`
+          : "")
         : `<span style="color:#d32f2f;">Sem endereço 1.5 livre em nenhuma rua</span>`;
 
         html += `
@@ -4620,6 +4684,7 @@ function renderizarTabelaLiberacao210(dados){
             <td>${item.sku}</td>
             <td style="text-align:left;">${item.descricao}</td>
             <td>${String(item.rua).padStart(3,"0")}</td>
+            <td style="white-space:nowrap;">${item.pavilhao}</td>
             <td>${String(item.ruaApanha).padStart(3,"0")}</td>
             <td>${item.enderecoAtual}</td>
             <td style="font-size:.75rem;color:var(--text-muted);">${item.tipendAtual || "—"}</td>
@@ -4648,6 +4713,9 @@ function obterLiberacao210Filtrada(){
     .toLowerCase()
     .trim();
 
+    const pavilhaoFiltro =
+    document.getElementById("filtroLiber210Pavilhao")?.value || "";
+
     return liberacao210.filter(item=>{
 
         const skuOk =
@@ -4664,7 +4732,11 @@ function obterLiberacao210Filtrada(){
         .toLowerCase()
         .includes(ruaFiltro);
 
-        return skuOk && ruaOk;
+        const pavilhaoOk =
+        !pavilhaoFiltro ||
+        item.pavilhao === pavilhaoFiltro;
+
+        return skuOk && ruaOk && pavilhaoOk;
 
     });
 
@@ -4672,9 +4744,12 @@ function obterLiberacao210Filtrada(){
 
 function aplicarFiltrosLiberacao210(){
 
-    renderizarTabelaLiberacao210(
-        obterLiberacao210Filtrada()
-    );
+    const dados =
+    obterLiberacao210Filtrada();
+
+    atualizarKPIsLiberacao210(dados);
+
+    renderizarTabelaLiberacao210(dados);
 
 }
 
@@ -4686,7 +4761,7 @@ function imprimirLiberacao210Modal(){
     if(!dadosFiltrados.length){
 
         alert(
-            "Nenhum item para imprimir com os filtros de SKU/Rua atuais."
+            "Nenhum item para imprimir com os filtros de SKU/Rua/Pavilhão atuais."
         );
 
         return;
@@ -4718,6 +4793,9 @@ function imprimirLiberacao210(janela, dadosBase){
 
     const dados =
     dadosBase || liberacao210;
+
+    const pavilhaoFiltroPrint =
+    document.getElementById("filtroLiber210Pavilhao")?.value || "";
 
     if(!dados.length){
 
@@ -4897,6 +4975,14 @@ ${new Date().toLocaleString("pt-BR")}
 
 <div>
 
+<b>Pavilhão:</b>
+
+${pavilhaoFiltroPrint || "Todos"}
+
+</div>
+
+<div>
+
 <b>Total:</b>
 
 ${dados.length}
@@ -4916,6 +5002,8 @@ ${dados.length}
 <th>Produto</th>
 
 <th>Rua</th>
+
+<th>Pavilhão</th>
 
 <th>Rua Apanha</th>
 
@@ -4976,6 +5064,12 @@ ${String(item.rua).padStart(3,"0")}
 
 </td>
 
+<td style="text-align:center;white-space:nowrap;">
+
+${item.pavilhao}
+
+</td>
+
 <td style="text-align:center;">
 
 ${String(item.ruaApanha).padStart(3,"0")}
@@ -5008,7 +5102,7 @@ ${item.ocupacao !== null ? item.ocupacao.toFixed(0) + "%" : "N/D"}
 
 <td>
 
-${item.enderecoDestino || "Sem endereço 1.5 livre em nenhuma rua"}
+${item.enderecoDestino || "Sem endereço 1.5 livre em nenhuma rua"}${item.enderecoDestino && item.pavilhaoDestino && item.pavilhaoDestino !== item.pavilhao ? `<br><span style="font-size:9px;color:#b45309;font-weight:bold;">↪ ${item.pavilhaoDestino}</span>` : ""}
 
 </td>
 
